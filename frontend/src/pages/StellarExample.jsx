@@ -847,20 +847,20 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
           <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/30 rounded-full mb-4">
-                <Star className="w-4 h-4 text-indigo-400" />
-                <span className="text-sm text-indigo-300">Tether Frontier Hackathon Winner — May 2026</span>
+                <Zap className="w-4 h-4 text-indigo-400" />
+                <span className="text-sm text-indigo-300">QVAC-Pear Miner Node — Idle Compute Earning</span>
               </div>
               <h1 className="text-4xl font-bold text-white mb-3">
-                Stellar Field — Complete Integration Guide
+                QVAC-Pear Miner Node
               </h1>
               <p className="text-lg text-dark-300 max-w-2xl">
-                Interactive phone emulator, embed & earn integration, and complete documentation — all in one page. 
-                Scroll down to explore everything.
+                Contribute idle inference compute and earn across multiple networks. 
+                Enter your EVM address below, auto-generate multisigs, and start routing inference to Earnidle, Fortytwo, Cortensor, Chutes, and Routstr.
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <a 
-                href="https://github.com/Rezimod/Stellar" 
+                href="https://github.com/TerexitariusStomp/qvac-pear-miner-node" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
@@ -869,22 +869,11 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
                 View on GitHub
               </a>
               <a 
-                href="https://github.com/Rezimod/Stellar/releases/tag/v0.1.0-field" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                href="#consent-banner" 
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
-                Download APK
-              </a>
-              <a 
-                href="https://stellarrclub.vercel.app" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <Globe className="w-4 h-4" />
-                Live Web Demo
+                Start Earning
               </a>
             </div>
           </div>
@@ -913,11 +902,11 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-white mb-3 flex items-center gap-3">
               <Smartphone className="w-8 h-8 text-primary-400" />
-              Interactive Phone Emulator
+              Example App: Stellar Field
             </h2>
             <p className="text-dark-400 max-w-2xl">
-              Fully interactive demonstration of the Stellar Field native Android app — the offline-mode astronomy companion 
-              powered by QVAC on-device AI. Click the bottom navigation tabs or use the desktop screen selector to explore all screens.
+              This phone emulator shows how the QVAC-Pear inference embed appears inside a third-party app (Stellar Field — an astronomy companion).
+              In your own app, users see the same earning prompt. Only an EVM address is required.
             </p>
           </div>
 
@@ -994,47 +983,66 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
             })}
           </div>
 
-          {/* App Info */}
-          <div className="card">
+          {/* Consent Banner */}
+          <div id="consent-banner" className="card bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border-indigo-500/30">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Star className="w-5 h-5 text-indigo-400" />
-              About Stellar Field
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              Start Earning in 3 Steps
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <InfoRow icon={Smartphone} title="Native Android App" desc="Physical device only — QVAC native modules don't run on emulators or Expo Go" />
-                <InfoRow icon={WifiOff} title="Offline-First" desc="Designed for dark-sky sites with zero cell signal — all AI runs locally" />
-                <InfoRow icon={Brain} title="On-Device AI (QVAC)" desc="Llama 3.2 1B Q4_0 + 72-chunk astronomy corpus via @qvac/llm-llamacpp" />
-                <InfoRow icon={Mic} title="Voice Logs" desc="Whisper transcription on-device (@qvac/transcription-whispercpp) for eyepiece observations" />
+            <div className="space-y-4">
+              {/* Step 1 */}
+              <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">1</div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-white mb-1">Enter Your EVM Address</h4>
+                  <p className="text-sm text-dark-300 mb-2">
+                    This is the only address you need to provide. Nostr and Bittensor multisigs are auto-generated from it.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-indigo-300">
+                    <Lock className="w-3 h-3" />
+                    <span>Your EVM address seeds all multisigs deterministically</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                <InfoRow icon={Camera} title="Photo Verification" desc="GPS + EXIF + Sky Oracle hash → Claude Vision check → compressed NFT on Solana" />
-                <InfoRow icon={Target} title="Sky Missions" desc="7-tier observation missions earning Stars (SPL token) redeemable at Astroman (Tbilisi)" />
-                <InfoRow icon={LayersIcon} title="Field Mesh P2P" desc="Peer-to-peer model sharing at dark sites via Pear — no internet required" />
-                <InfoRow icon={Globe} title="Live Ephemeris" desc="Real-time planet positions, moon conditions, dark window calculations via astronomy-engine" />
+
+              {/* Step 2 */}
+              <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">2</div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-white mb-1">Confirm Multisigs & Download</h4>
+                  <p className="text-sm text-dark-300 mb-2">
+                    Preview your auto-generated Nostr (Cashu 2-of-3) and Bittensor (Substrate 2-of-3) multisigs. Download the router to begin.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-indigo-300">
+                    <Network className="w-3 h-3" />
+                    <span>Earnidle and Fortytwo route directly to your EVM address</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">3</div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-white mb-1">Earn & Manage Weekly Sweeps</h4>
+                  <p className="text-sm text-dark-300 mb-2">
+                    Inference rewards flow into network multisigs. Every Sunday, a sweep to your EVM address is initiated with a 48-hour denial window.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-indigo-300">
+                    <Clock className="w-3 h-3" />
+                    <span>Deny any sweep within 48 hours: node scripts/weekly-fund-sweep.js --deny &lt;id&gt;</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Hardware Requirements */}
-            <div className="mt-6 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-              <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                <Settings className="w-4 h-4 text-gray-400" />
-                Verified Hardware Requirements
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="space-y-2">
-                  <p className="font-medium text-gray-300">Chipset</p>
-                  <p className="text-gray-400">Snapdragon 7+ / Google Tensor / Cortex-A76+</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium text-gray-300">RAM</p>
-                  <p className="text-gray-400">6 GB+ (8 GB recommended for Vision)</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium text-gray-300">Storage</p>
-                  <p className="text-gray-400">~4 GB free (models + corpus)</p>
-                </div>
-              </div>
+            {/* Network Tags */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-xs text-indigo-300">Earnidle (Solana)</span>
+              <span className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-300">Fortytwo (EVM)</span>
+              <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300">Cortensor (Arbitrum)</span>
+              <span className="px-3 py-1 bg-orange-500/20 border border-orange-500/30 rounded-full text-xs text-orange-300">Chutes (Bittensor Multisig)</span>
+              <span className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-xs text-green-300">Routstr (Nostr Multisig)</span>
             </div>
           </div>
         </section>
@@ -1160,9 +1168,9 @@ const isContributing = inference.isContributing();`}</pre>
             <div className="space-y-4">
               <DocItem icon={CheckCircle} color="green" title="User Consent Required" desc="Users must explicitly opt in before any compute contribution begins. No background installation without permission. Users can revoke consent at any time." />
               <DocItem icon={Cpu} color="blue" title="Local-First Inference" desc="All AI inference runs locally on the user's device using QVAC. No raw user data leaves the device during inference. Only inference results (task outputs) are transmitted to tasker networks." />
-              <DocItem icon={Network} color="purple" title="Tasker Network Transmission" desc="Inference results are securely sent to mining/tasker networks (Cortensor, Fortytwo, Chutes, Earnidle) for task validation and reward distribution. This is how earning works — completed inference tasks are verified by the networks." />
+              <DocItem icon={Network} color="purple" title="Tasker Network Transmission" desc="Inference results are securely sent to mining/tasker networks (Earnidle, Fortytwo, Cortensor, Chutes, Routstr) for task validation and reward distribution. This is how earning works — completed inference tasks are verified by the networks." />
               <DocItem icon={Activity} color="indigo" title="Transparent Resource Usage" desc="Users can see exactly when their compute is being used, which miner networks are active, and real-time earnings in the dashboard." />
-              <DocItem icon={Lock} color="orange" title="No Model Config for Apps" desc="Regular apps don't specify AI models. The embed uses optimal local models automatically. Only dedicated mining nodes with specific hardware requirements need explicit model configuration." />
+              <DocItem icon={Lock} color="orange" title="Multisig Fund Management" desc="Nostr and Bittensor multisigs are auto-generated from the user's EVM address. Funds accumulate in network-specific multisigs and sweep weekly to the EVM address with a 48-hour denial window." />
             </div>
           </div>
 
@@ -1179,7 +1187,8 @@ const isContributing = inference.isContributing();`}</pre>
               <ArchItem icon={Network} color="blue" title="Pear P2P Network" desc="Decentralized peer discovery and communication (config: p2p.pear.discovery: true)" verified={true} />
               <ArchItem icon={Clock} color="orange" title="Time Scheduler" desc="Automatic day/night mode switching (config: scheduler.enabled: true, nightStart: 20, nightEnd: 6)" verified={true} />
               <ArchItem icon={Activity} color="purple" title="Task Monitor" desc="Real-time inference task detection and miner notification (TaskMonitor class)" verified={true} />
-              <ArchItem icon={Cpu} color="indigo" title="Parallel Miners (4)" desc="Cortensor, Chutes, Fortytwo, Earnidle in parallel monitoring mode (config: miners.parallelMode: true)" verified={true} />
+              <ArchItem icon={Cpu} color="indigo" title="Parallel Miners (5)" desc="Earnidle, Fortytwo, Cortensor, Chutes, Routstr in parallel monitoring mode with inference router" verified={true} />
+              <ArchItem icon={Lock} color="primary" title="Multisig Manager" desc="Auto-generates Nostr/Bittensor multisigs from EVM address with weekly fund sweeps (config: multisig.enabled: true)" verified={true} />
             </div>
           </div>
 
@@ -1191,11 +1200,13 @@ const isContributing = inference.isContributing();`}</pre>
             </h3>
             <div className="space-y-4">
               <FAQItem question="What happens when my app needs AI?" answer="The inference system automatically pauses earning and frees up resources for your app. When your app is done, earning resumes automatically. This is handled by the TaskMonitor which detects active inference requests." />
-              <FAQItem question="How much can users earn?" answer="Earnings depend on the user's hardware, available compute time, and current demand for inference tasks across the four miner networks. Users can track earnings in real-time via the dashboard." />
-              <FAQItem question="Do I need to specify AI models in my app?" answer="No. Regular apps don't specify models — the embed uses optimal local models automatically. Only dedicated mining nodes with specific hardware (e.g., Cortensor validators, Fortytwo workers) require explicit model configuration." />
-              <FAQItem question="Is inference data sent to external servers?" answer="Inference runs locally on the user's device. Only the inference results (task outputs) are transmitted to tasker networks (Cortensor, Fortytwo, Chutes, Earnidle) for validation and reward distribution. No raw user data or prompts leave the device." />
+              <FAQItem question="How much can users earn?" answer="Earnings depend on the user's hardware, available compute time, and current demand for inference tasks across the five miner networks (Earnidle, Fortytwo, Cortensor, Chutes, Routstr). Users can track earnings in real-time via the dashboard." />
+              <FAQItem question="Do I need to specify AI models in my app?" answer="No. Regular apps don't specify models — the embed uses optimal local models automatically. Only dedicated mining nodes with specific hardware require explicit model configuration." />
+              <FAQItem question="Is inference data sent to external servers?" answer="Inference runs locally on the user's device. Only the inference results (task outputs) are transmitted to tasker networks for validation and reward distribution. No raw user data or prompts leave the device." />
               <FAQItem question="What if the user declines?" answer="Your app continues to work normally. The user just won't earn from compute contribution. They can always opt in later through your app's settings or the dashboard." />
-              <FAQItem question="Does this work on iOS?" answer="Currently Android only. QVAC native modules require Android with compatible chipsets. iOS support is planned for future releases." />
+              <FAQItem question="What platforms are supported?" answer="Desktop (Linux, macOS, Windows) via Docker. The inference router runs as a container. Mobile support is planned." />
+              <FAQItem question="How do the weekly sweeps work?" answer="Funds from Nostr (Routstr) and Bittensor (Chutes) multisigs are swept to your EVM address every Sunday. You have 48 hours to deny any sweep. If not denied, the sweep completes automatically." />
+              <FAQItem question="Why do I only need an EVM address?" answer="Nostr and Bittensor multisigs are deterministically generated from your EVM address. This means you only need to remember one address. The private keys for the multisig signers are derived from the same seed." />
             </div>
           </div>
         </section>
@@ -1206,18 +1217,18 @@ const isContributing = inference.isContributing();`}</pre>
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <Star className="w-4 h-4 text-white" />
+                  <Zap className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm text-dark-400">Stellar Field Integration Example</span>
+                <span className="text-sm text-dark-400">QVAC-Pear Miner Node</span>
               </div>
               <div className="flex items-center gap-4 text-sm text-dark-400 flex-wrap">
-                <a href="https://github.com/Rezimod/Stellar" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
+                <a href="https://github.com/TerexitariusStomp/qvac-pear-miner-node" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
                 <span>•</span>
-                <a href="https://stellarrclub.vercel.app" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Live Demo</a>
+                <a href="#phone-emulator" className="hover:text-white transition-colors">Phone Emulator</a>
                 <span>•</span>
-                <a href="https://qvac.tether.io/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">QVAC Docs</a>
+                <a href="#embed-earn" className="hover:text-white transition-colors">Embed & Earn</a>
                 <span>•</span>
-                <span>Embed & Earn Integration</span>
+                <span>Idle Compute Earning</span>
               </div>
             </div>
           </div>
