@@ -95,8 +95,10 @@ echo "Node running at http://localhost:3000"
     const readme = `QVAC-Pear Miner Node - Setup Bundle
 =====================================
 
-1. DOUBLE-CLICK setup-wizard.html to launch the GUI setup wizard.
-   It will guide you through configuration and auto-start the node.
+1. RUN SETUP (Recommended):
+   node setup.js
+   This launches the interactive CLI wizard, installs deps,
+   starts the node, and opens the dashboard automatically.
 
 2. OR use the files directly:
    - Docker:   docker-compose up -d
@@ -105,17 +107,16 @@ echo "Node running at http://localhost:3000"
 Your EVM payout address: ${evmAddress}
 `;
 
-    // Fetch the setup wizard from the server (or inline it)
-    let wizardHtml = '';
+    // Read setup.js from disk for the bundle
+    let setupJs = '';
     try {
-      const res = await fetch('/setup-wizard.html');
-      wizardHtml = await res.text();
+      setupJs = await (await fetch('/setup.js')).text();
     } catch (e) {
-      // Fallback inline wizard if fetch fails
-      wizardHtml = buildInlineWizard(evmAddress);
+      setupJs = '// Run: node setup.js\nconsole.log("Please download setup.js from the repo");\n';
     }
 
-    zip.file('setup-wizard.html', wizardHtml);
+    zip.file('setup.js', setupJs);
+    zip.file('setup-wizard.html', buildInlineWizard(evmAddress));
     zip.file('docker-compose.yml', dockerCompose);
     zip.file('start.sh', startScript);
     zip.file('README.txt', readme);
@@ -227,7 +228,7 @@ h2{color:#fff;}p{color:#94a3b8;}button{padding:14px 28px;border-radius:12px;bord
             <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Extract the zip, then double-click <code className="bg-black/20 px-1 rounded">setup-wizard.html</code> to launch the GUI. It will guide you through prerequisites, configuration, and auto-start the node. Phone: the embed script auto-installs when users opt in — no Docker needed.
+            Extract the zip, then run <code className="bg-black/20 px-1 rounded">node setup.js</code> in your terminal. It installs dependencies, starts the node, and opens the dashboard automatically. Phone: the embed script auto-installs when users opt in — no Docker needed.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">

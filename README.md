@@ -93,11 +93,16 @@ The recommended way to install on desktop is the **Setup Bundle**:
 
 1. Download `qvac-pear-miner-setup.zip` from the dashboard
 2. Extract the zip
-3. **Double-click `setup-wizard.html`** — a GUI wizard opens in your browser
-4. The wizard checks prerequisites, confirms your EVM address, and auto-starts the node
+3. **Run `node setup.js`** — an interactive CLI wizard guides you through:
+   - Prerequisite checks (Node.js 18+, Docker optional)
+   - EVM payout address configuration
+   - Dependency installation
+   - Auto-starting the node
+   - Opening the dashboard in your browser
 
 The bundle includes:
-- `setup-wizard.html` — Self-contained GUI (no internet required after download)
+- `setup.js` — Interactive setup launcher (run this!)
+- `setup-wizard.html` — Visual reference / GUI companion
 - `docker-compose.yml` — Docker installation
 - `start.sh` — Native Node.js installation
 - `README.txt` — Quick reference

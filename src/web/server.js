@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Serve built React frontend from project root
+const PUBLIC_DIR = path.join(__dirname, '..', '..', 'frontend', 'dist');
+
 export class WebServer {
   constructor(config, nodeManager = null) {
     this.config = config;
@@ -45,38 +48,62 @@ export class WebServer {
   
   async handleRequest(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    
     this.logger.debug(`${req.method} ${url.pathname}`);
-    
-    // Serve static files
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      await this.serveFile(res, 'index.html', 'text/html');
-    } else if (url.pathname === '/styles.css') {
-      await this.serveFile(res, 'styles.css', 'text/css');
-    } else if (url.pathname === '/app.js') {
-      await this.serveFile(res, 'app.js', 'application/javascript');
-    } else if (url.pathname === '/api/consent' && req.method === 'POST') {
+
+    // API routes
+    if (url.pathname === '/api/consent' && req.method === 'POST') {
       await this.handleConsent(req, res);
+      return;
     } else if (url.pathname === '/api/signin' && req.method === 'POST') {
       await this.handleSignIn(req, res);
+      return;
     } else if (url.pathname === '/api/download' && req.method === 'GET') {
       await this.handleDownload(req, res);
+      return;
     } else if (url.pathname === '/api/status' && req.method === 'GET') {
       await this.handleStatus(req, res);
-    } else {
-      res.writeHead(404);
-      res.end('Not Found');
+      return;
     }
+
+    // Static files from built frontend
+    await this.serveStatic(res, url.pathname);
   }
-  
-  async serveFile(res, filename, contentType) {
+
+  async serveStatic(res, pathname) {
     try {
-      const filePath = path.join(__dirname, 'public', filename);
+      let filePath;
+      let contentType = 'application/octet-stream';
+
+      if (pathname === '/' || pathname === '/index.html') {
+        filePath = path.join(PUBLIC_DIR, 'index.html');
+        contentType = 'text/html';
+      } else if (pathname.startsWith('/assets/')) {
+        filePath = path.join(PUBLIC_DIR, pathname);
+        if (pathname.endsWith('.js')) contentType = 'application/javascript';
+        else if (pathname.endsWith('.css')) contentType = 'text/css';
+      } else {
+        // Try to serve other files from dist, fall back to index.html for SPA routing
+        filePath = path.join(PUBLIC_DIR, pathname);
+        try {
+          await fs.access(filePath);
+          if (pathname.endsWith('.html')) contentType = 'text/html';
+          else if (pathname.endsWith('.css')) contentType = 'text/css';
+          else if (pathname.endsWith('.js')) contentType = 'application/javascript';
+          else if (pathname.endsWith('.json')) contentType = 'application/json';
+          else if (pathname.endsWith('.png')) contentType = 'image/png';
+          else if (pathname.endsWith('.svg')) contentType = 'image/svg+xml';
+        } catch {
+          // SPA fallback: serve index.html for unknown routes
+          filePath = path.join(PUBLIC_DIR, 'index.html');
+          contentType = 'text/html';
+        }
+      }
+
       const content = await fs.readFile(filePath);
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content);
     } catch (error) {
-      this.logger.error(`Error serving ${filename}:`, error);
+      this.logger.error(`Error serving ${pathname}:`, error);
       res.writeHead(500);
       res.end('Internal Server Error');
     }
