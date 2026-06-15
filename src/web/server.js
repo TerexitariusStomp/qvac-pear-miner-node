@@ -72,6 +72,12 @@ export class WebServer {
     } else if (url.pathname === '/api/ai-docs' && req.method === 'GET') {
       await this.handleAIDocs(req, res);
       return;
+    } else if (url.pathname === '/api/start' && req.method === 'POST') {
+      await this.handleStart(req, res);
+      return;
+    } else if (url.pathname === '/api/stop' && req.method === 'POST') {
+      await this.handleStop(req, res);
+      return;
     }
 
     // Static files from built frontend
@@ -317,6 +323,67 @@ export class WebServer {
       res.end(JSON.stringify({ success: true, data: files }));
     } catch (error) {
       this.logger.error('Error handling AI docs:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+  }
+
+  async handleStart(req, res) {
+    try {
+      const body = await this.parseBody(req);
+      this.logger.info(`Start mining request from PWA: wallet=${body.wallet?.slice(0, 10)}...`);
+
+      if (!this.nodeManager) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Node manager not available' }));
+        return;
+      }
+
+      if (!this.nodeManager.isRunning) {
+        await this.nodeManager.start();
+        this.logger.info('Node started via PWA');
+      }
+
+      // Update wallet address if provided
+      if (body.wallet && this.nodeManager.minerManager) {
+        this.nodeManager.minerManager.evmAddress = body.wallet;
+        this.logger.info(`Wallet updated: ${body.wallet.slice(0, 10)}...`);
+      }
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({ success: true, message: 'Mining started', running: true }));
+    } catch (error) {
+      this.logger.error('Error handling start:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+  }
+
+  async handleStop(req, res) {
+    try {
+      this.logger.info('Stop mining request from PWA');
+
+      if (!this.nodeManager) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Node manager not available' }));
+        return;
+      }
+
+      if (this.nodeManager.isRunning) {
+        await this.nodeManager.stop();
+        this.logger.info('Node stopped via PWA');
+      }
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({ success: true, message: 'Mining stopped', running: false }));
+    } catch (error) {
+      this.logger.error('Error handling stop:', error);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: error.message }));
     }
