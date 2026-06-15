@@ -102,28 +102,11 @@ The simplest way to install on desktop — fully containerized and isolated:
 
 No terminal commands to memorize. No zip extraction. Fully containerized. Start to earn, stop when done.
 
-### Phone / Mobile
+### Phone / Mobile (PWA)
 
-No installation required for end users. The embed script auto-installs the inference runtime when mobile users opt in within the host app.
+Open `https://miner.templeearth.cc` on your phone. Tap **"Add to Home Screen"** — it installs as a PWA and works offline. No APK, no app store, no download.
 
-**For testing the Android flow**, build the APK with the provided script:
-```bash
-cd qvac-pear-miner-node
-bash build-apk.sh
-```
-This script installs dependencies, builds the frontend, adds the Android platform, and outputs the APK.
-
-Or manually:
-```bash
-cd qvac-pear-miner-node/android-app
-npm install
-npx cap add android
-npx cap sync android
-npx cap build android
-```
-
-The APK outputs to `android-app/android/app/build/outputs/apk/debug/app-debug.apk`.
-
+For embedding in another app:
 ```html
 <script
   src="https://cdn.qvac-pear.io/inference-embed.js"
@@ -132,19 +115,6 @@ The APK outputs to `android-app/android/app/build/outputs/apk/debug/app-debug.ap
   auto-install>
 </script>
 ```
-
-### Android Test APK
-
-An Android test app is available in the `android-app/` directory. It wraps the embed script in a Capacitor WebView for testing the mobile opt-in flow.
-
-```bash
-cd android-app
-npm install
-npx cap add android
-npx cap build android
-```
-
-Output: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## Architecture
 
