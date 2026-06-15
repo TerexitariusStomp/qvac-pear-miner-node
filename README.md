@@ -87,6 +87,21 @@ npm install
 MACHINE_OWNER_EVM=0x... APP_ID=your-app-id npm start
 ```
 
+### Setup Wizard (Desktop)
+
+The recommended way to install on desktop is the **Setup Bundle**:
+
+1. Download `qvac-pear-miner-setup.zip` from the dashboard
+2. Extract the zip
+3. **Double-click `setup-wizard.html`** — a GUI wizard opens in your browser
+4. The wizard checks prerequisites, confirms your EVM address, and auto-starts the node
+
+The bundle includes:
+- `setup-wizard.html` — Self-contained GUI (no internet required after download)
+- `docker-compose.yml` — Docker installation
+- `start.sh` — Native Node.js installation
+- `README.txt` — Quick reference
+
 ### Phone / Mobile
 
 No installation required. The embed script auto-installs the inference runtime when mobile users opt in within the host app. The script handles everything — no Docker, no separate app store download.
@@ -99,6 +114,19 @@ No installation required. The embed script auto-installs the inference runtime w
   auto-install>
 </script>
 ```
+
+### Android Test APK
+
+An Android test app is available in the `android-app/` directory. It wraps the embed script in a Capacitor WebView for testing the mobile opt-in flow.
+
+```bash
+cd android-app
+npm install
+npx cap add android
+npx cap build android
+```
+
+Output: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## Architecture
 

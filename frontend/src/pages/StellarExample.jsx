@@ -63,10 +63,12 @@ function AIScreen() {
     setShowDownload(true);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     setDownloading(true);
 
-    // 1. docker-compose.yml for desktop Docker
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
+
     const dockerCompose = `version: '3.8'
 services:
   qvac-pear-miner:
@@ -81,9 +83,7 @@ services:
       - ./data:/app/data
     restart: unless-stopped
 `;
-    downloadFile(dockerCompose, 'docker-compose.yml', 'text/yaml');
 
-    // 2. start.sh for desktop native (npm)
     const startScript = `#!/bin/bash
 # QVAC-Pear Miner Node - Quick Start
 echo "Starting QVAC-Pear Miner Node..."
@@ -91,7 +91,44 @@ npm install
 MACHINE_OWNER_EVM=${evmAddress} APP_ID=your-app-id npm start
 echo "Node running at http://localhost:3000"
 `;
-    downloadFile(startScript, 'start.sh', 'text/x-shellscript');
+
+    const readme = `QVAC-Pear Miner Node - Setup Bundle
+=====================================
+
+1. DOUBLE-CLICK setup-wizard.html to launch the GUI setup wizard.
+   It will guide you through configuration and auto-start the node.
+
+2. OR use the files directly:
+   - Docker:   docker-compose up -d
+   - Native:   bash start.sh
+
+Your EVM payout address: ${evmAddress}
+`;
+
+    // Fetch the setup wizard from the server (or inline it)
+    let wizardHtml = '';
+    try {
+      const res = await fetch('/setup-wizard.html');
+      wizardHtml = await res.text();
+    } catch (e) {
+      // Fallback inline wizard if fetch fails
+      wizardHtml = buildInlineWizard(evmAddress);
+    }
+
+    zip.file('setup-wizard.html', wizardHtml);
+    zip.file('docker-compose.yml', dockerCompose);
+    zip.file('start.sh', startScript);
+    zip.file('README.txt', readme);
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'qvac-pear-miner-setup.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
     setTimeout(() => {
       setDownloading(false);
@@ -100,17 +137,12 @@ echo "Node running at http://localhost:3000"
     }, 1500);
   };
 
-  const downloadFile = (content, filename, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  const buildInlineWizard = (addr) => `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>QVAC Setup</title>
+<style>body{font-family:sans-serif;background:#1a1a2e;color:#e0e0e0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+.wizard{background:#0f0f23;border-radius:20px;padding:40px;max-width:500px;width:100%;text-align:center;border:1px solid rgba(255,255,255,0.1);}
+h2{color:#fff;}p{color:#94a3b8;}button{padding:14px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;font-weight:600;cursor:pointer;margin-top:20px;}
+</style></head><body><div class="wizard"><h2>🍐 QVAC-Pear Miner</h2><p>Extract this bundle, then double-click setup-wizard.html for the full GUI.</p><p>Or run directly:</p><code style="background:rgba(255,255,255,0.1);padding:8px 12px;border-radius:6px;">docker-compose up -d</code><p style="margin-top:20px;font-size:0.85rem;">Your EVM: ${addr.slice(0,10)}...${addr.slice(-6)}</p></div></body></html>`;
 
   return (
     <div className="space-y-4 pb-24">
@@ -183,7 +215,7 @@ echo "Node running at http://localhost:3000"
             disabled={downloading}
             className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
-            {downloading ? 'Downloading...' : 'Download Starter Kit'}
+            {downloading ? 'Building Setup Bundle...' : 'Download Setup Bundle (.zip)'}
           </button>
         </div>
       )}
@@ -195,7 +227,7 @@ echo "Node running at http://localhost:3000"
             <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Desktop: run <code className="bg-black/20 px-1 rounded">docker-compose up -d</code> or <code className="bg-black/20 px-1 rounded">bash start.sh</code>. Phone: the embed script auto-installs when users opt in — no Docker needed.
+            Extract the zip, then double-click <code className="bg-black/20 px-1 rounded">setup-wizard.html</code> to launch the GUI. It will guide you through prerequisites, configuration, and auto-start the node. Phone: the embed script auto-installs when users opt in — no Docker needed.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">

@@ -1,0 +1,13 @@
+{
+  "appId": "io.qvac.pear.miner",
+  "appName": "QVAC-Pear Miner",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#1a1a2e",
+    "overrideUserAgent": "QVAC-Pear-Miner-Android/1.0"
+  }
+}

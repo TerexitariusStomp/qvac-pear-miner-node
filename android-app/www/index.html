@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>QVAC-Pear Miner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 24px; padding-top: 20px; }
+    .logo { width: 72px; height: 72px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 32px; }
+    h1 { font-size: 1.4rem; color: #fff; margin-bottom: 4px; }
+    .subtitle { color: #94a3b8; font-size: 0.9rem; }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title { color: #fff; font-weight: 600; margin-bottom: 8px; font-size: 1rem; }
+    .card-text { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
+    .status { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .status-text { color: #4ade80; font-size: 0.85rem; font-weight: 500; }
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: rgba(255,255,255,0.1); margin-top: 10px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .info-item { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px; text-align: center; }
+    .info-value { color: #fff; font-weight: 700; font-size: 1.1rem; }
+    .info-label { color: #64748b; font-size: 0.75rem; margin-top: 4px; }
+    .tag { display: inline-block; padding: 4px 10px; background: rgba(99,102,241,0.2); color: #a5b4fc; border-radius: 6px; font-size: 0.75rem; margin-bottom: 12px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🍐</div>
+    <h1>QVAC-Pear Miner</h1>
+    <p class="subtitle">Earn from idle inference on your phone</p>
+  </div>
+
+  <div class="card" id="welcome-card">
+    <div class="tag">Mobile Test Build</div>
+    <div class="card-title">Contribute Idle Compute</div>
+    <div class="card-text">
+      Your phone can earn by contributing spare inference cycles when not in use.
+      This is a test build to verify the embed script flow on Android.
+    </div>
+    <div class="status">
+      <div class="status-dot"></div>
+      <span class="status-text">Runtime ready</span>
+    </div>
+    <button class="btn" id="opt-in-btn" onclick="optIn()">Opt In & Start Earning</button>
+    <button class="btn btn-secondary hidden" id="pause-btn" onclick="pauseMining()">Pause Contribution</button>
+  </div>
+
+  <div class="card hidden" id="stats-card">
+    <div class="card-title">Earnings</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-value" id="stat-uptime">0m</div>
+        <div class="info-label">Uptime</div>
+      </div>
+      <div class="info-item">
+        <div class="info-value" id="stat-tasks">0</div>
+        <div class="info-label">Tasks</div>
+      </div>
+      <div class="info-item">
+        <div class="info-value" id="stat-network">-</div>
+        <div class="info-label">Network</div>
+      </div>
+      <div class="info-item">
+        <div class="info-value" id="stat-earnings">$0.00</div>
+        <div class="info-label">Est. Earnings</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">How It Works</div>
+    <div class="card-text">
+      1. Opt in to share idle compute<br>
+      2. The app runs lightweight inference tasks in the background<br>
+      3. Rewards accumulate in protocol multisigs<br>
+      4. Monthly payout: 70% to you, 30% to app developer
+    </div>
+  </div>
+
+  <!-- QVAC Inference Embed Script -->
+  <script
+    src="https://cdn.qvac-pear.io/inference-embed.js"
+    data-app-id="android-test-app"
+    data-evm-address="0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf"
+    auto-install>
+  </script>
+
+  <script>
+    let mining = false;
+    let uptime = 0;
+    let tasks = 0;
+
+    function optIn() {
+      mining = true;
+      document.getElementById('opt-in-btn').classList.add('hidden');
+      document.getElementById('pause-btn').classList.remove('hidden');
+      document.getElementById('stats-card').classList.remove('hidden');
+      document.querySelector('.status-text').textContent = 'Contributing inference...';
+
+      // Start simulated stats updates
+      setInterval(() => {
+        if (!mining) return;
+        uptime++;
+        document.getElementById('stat-uptime').textContent = Math.floor(uptime / 60) + 'm';
+        if (Math.random() > 0.7) {
+          tasks++;
+          document.getElementById('stat-tasks').textContent = tasks;
+        }
+        const earnings = (uptime * 0.001).toFixed(3);
+        document.getElementById('stat-earnings').textContent = '$' + earnings;
+      }, 1000);
+
+      const networks = ['Earnidle', 'Fortytwo', 'Cortensor', 'Chutes', 'Routstr'];
+      let netIdx = 0;
+      setInterval(() => {
+        if (!mining) return;
+        netIdx = (netIdx + 1) % networks.length;
+        document.getElementById('stat-network').textContent = networks[netIdx];
+      }, 5000);
+
+      // Trigger the embed script API if available
+      if (window.QVACInference) {
+        window.QVACInference.init({
+          appId: 'android-test-app',
+          evmAddress: '0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf'
+        }).then(() => {
+          window.QVACInference.resume();
+        }).catch(() => {});
+      }
+    }
+
+    function pauseMining() {
+      mining = false;
+      document.getElementById('opt-in-btn').classList.remove('hidden');
+      document.getElementById('pause-btn').classList.add('hidden');
+      document.querySelector('.status-text').textContent = 'Paused';
+      document.querySelector('.status-dot').style.background = '#f59e0b';
+      if (window.QVACInference && window.QVACInference.pause) {
+        window.QVACInference.pause();
+      }
+    }
+  </script>
+</body>
+</html>
