@@ -87,25 +87,19 @@ npm install
 MACHINE_OWNER_EVM=0x... APP_ID=your-app-id npm start
 ```
 
-### Setup Wizard (Desktop)
+### Quick Start (Desktop)
 
-The recommended way to install on desktop is the **Setup Bundle**:
+The simplest way to install on desktop is a **single file**:
 
-1. Download `qvac-pear-miner-setup.zip` from the dashboard
-2. Extract the zip
-3. **Run `node setup.js`** — an interactive CLI wizard guides you through:
+1. Download `setup.js` from the dashboard
+2. **Run `node setup.js`** — an interactive CLI wizard guides you through:
    - Prerequisite checks (Node.js 18+, Docker optional)
-   - EVM payout address configuration
+   - EVM payout address confirmation (pre-filled from download)
    - Dependency installation
    - Auto-starting the node
    - Opening the dashboard in your browser
 
-The bundle includes:
-- `setup.js` — Interactive setup launcher (run this!)
-- `setup-wizard.html` — Visual reference / GUI companion
-- `docker-compose.yml` — Docker installation
-- `start.sh` — Native Node.js installation
-- `README.txt` — Quick reference
+No zip extraction needed. One file, one command, and you're running.
 
 ### Phone / Mobile
 

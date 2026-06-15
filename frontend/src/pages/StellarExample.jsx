@@ -66,66 +66,21 @@ function AIScreen() {
   const handleDownload = async () => {
     setDownloading(true);
 
-    const JSZip = (await import('jszip')).default;
-    const zip = new JSZip();
-
-    const dockerCompose = `version: '3.8'
-services:
-  qvac-pear-miner:
-    image: qvac-pear-miner:latest
-    container_name: qvac-pear-miner
-    ports:
-      - "3000:3000"
-    environment:
-      - MACHINE_OWNER_EVM=${evmAddress}
-      - APP_ID=your-app-id
-    volumes:
-      - ./data:/app/data
-    restart: unless-stopped
-`;
-
-    const startScript = `#!/bin/bash
-# QVAC-Pear Miner Node - Quick Start
-echo "Starting QVAC-Pear Miner Node..."
-npm install
-MACHINE_OWNER_EVM=${evmAddress} APP_ID=your-app-id npm start
-echo "Node running at http://localhost:3000"
-`;
-
-    const readme = `QVAC-Pear Miner Node - Setup Bundle
-=====================================
-
-1. RUN SETUP (Recommended):
-   node setup.js
-   This launches the interactive CLI wizard, installs deps,
-   starts the node, and opens the dashboard automatically.
-
-2. OR use the files directly:
-   - Docker:   docker-compose up -d
-   - Native:   bash start.sh
-
-Your EVM payout address: ${evmAddress}
-`;
-
-    // Read setup.js from disk for the bundle
+    // Fetch the real setup.js from the server, or generate inline
     let setupJs = '';
     try {
-      setupJs = await (await fetch('/setup.js')).text();
+      const res = await fetch('/setup.js');
+      setupJs = await res.text();
     } catch (e) {
-      setupJs = '// Run: node setup.js\nconsole.log("Please download setup.js from the repo");\n';
+      // Fallback: minimal inline setup script
+      setupJs = generateInlineSetup(evmAddress);
     }
 
-    zip.file('setup.js', setupJs);
-    zip.file('setup-wizard.html', buildInlineWizard(evmAddress));
-    zip.file('docker-compose.yml', dockerCompose);
-    zip.file('start.sh', startScript);
-    zip.file('README.txt', readme);
-
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = new Blob([setupJs], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'qvac-pear-miner-setup.zip';
+    a.download = 'setup.js';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -135,15 +90,116 @@ Your EVM payout address: ${evmAddress}
       setDownloading(false);
       setInstalled(true);
       setShowDownload(false);
-    }, 1500);
+    }, 800);
   };
 
-  const buildInlineWizard = (addr) => `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>QVAC Setup</title>
-<style>body{font-family:sans-serif;background:#1a1a2e;color:#e0e0e0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
-.wizard{background:#0f0f23;border-radius:20px;padding:40px;max-width:500px;width:100%;text-align:center;border:1px solid rgba(255,255,255,0.1);}
-h2{color:#fff;}p{color:#94a3b8;}button{padding:14px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;font-weight:600;cursor:pointer;margin-top:20px;}
-</style></head><body><div class="wizard"><h2>🍐 QVAC-Pear Miner</h2><p>Extract this bundle, then double-click setup-wizard.html for the full GUI.</p><p>Or run directly:</p><code style="background:rgba(255,255,255,0.1);padding:8px 12px;border-radius:6px;">docker-compose up -d</code><p style="margin-top:20px;font-size:0.85rem;">Your EVM: ${addr.slice(0,10)}...${addr.slice(-6)}</p></div></body></html>`;
+  const generateInlineSetup = (addr) => `#!/usr/bin/env node
+/**
+ * QVAC-Pear Miner Node — Self-Contained Setup
+ * Run: node setup.js
+ */
+import { execSync, spawn } from 'child_process';
+import { createServer } from 'http';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import readline from 'readline';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+const q = (prompt) => new Promise((resolve) => rl.question(prompt, resolve));
+
+async function main() {
+  console.log('\\n🍐 QVAC-Pear Miner Setup\\n');
+
+  // Check Node.js
+  let nodeVer;
+  try {
+    nodeVer = execSync('node --version', { encoding: 'utf-8' }).trim();
+    if (parseInt(nodeVer.slice(1)) < 18) { console.error('Node.js 18+ required'); process.exit(1); }
+    console.log('✓', nodeVer);
+  } catch { console.error('Node.js not found'); process.exit(1); }
+
+  // Check npm
+  try { console.log('✓ npm v' + execSync('npm --version', { encoding: 'utf-8' }).trim()); }
+  catch { console.error('npm not found'); process.exit(1); }
+
+  // Check Docker (optional)
+  let hasDocker = false;
+  try { execSync('docker --version', { stdio: 'ignore' }); hasDocker = true; console.log('✓ Docker'); }
+  catch { console.log('⚠ Docker not found — will use native mode'); }
+
+  // Choose method
+  let method = 'npm';
+  if (hasDocker) {
+    const c = await q('Docker (d) or native (n)? [n] ');
+    method = c.trim().toLowerCase().startsWith('d') ? 'docker' : 'npm';
+  }
+  console.log('✓ Method:', method);
+
+  // EVM address (pre-filled from download)
+  let evm = '${addr}';
+  const custom = await q('EVM address [' + evm.slice(0,8) + '...] (Enter to keep): ');
+  if (custom.trim()) evm = custom.trim();
+  console.log('✓ Payout:', evm.slice(0,10) + '...' + evm.slice(-6));
+
+  // App ID
+  const appId = (await q('App ID [protocol-default]: ')).trim() || 'protocol-default';
+
+  // Install
+  if (method === 'npm') {
+    console.log('\\n→ Installing dependencies...');
+    execSync('npm install', { stdio: 'inherit' });
+  }
+
+  // Write config
+  console.log('→ Writing config...');
+  const cfgPath = path.join(__dirname, 'config.json');
+  let cfg = {};
+  try { cfg = JSON.parse(await fs.readFile(cfgPath, 'utf-8')); } catch {}
+  cfg.multisig = cfg.multisig || {};
+  cfg.multisig.machineOwnerAddress = evm;
+  cfg.multisig.evmMultisigAddress = evm;
+  await fs.writeFile(cfgPath, JSON.stringify(cfg, null, 2));
+
+  // Start node
+  console.log('→ Starting node...');
+  const env = { ...process.env, MACHINE_OWNER_EVM: evm, APP_ID: appId };
+  if (method === 'docker') {
+    execSync('docker-compose up -d', { stdio: 'inherit', env });
+  } else {
+    const child = spawn('node', ['src/index.js'], { env, detached: true, stdio: 'ignore' });
+    child.unref();
+    console.log('✓ Node PID', child.pid);
+  }
+
+  // Wait for server
+  console.log('→ Waiting for dashboard...');
+  await new Promise((resolve) => {
+    let attempts = 0;
+    const iv = setInterval(() => {
+      attempts++;
+      import('net').then(({ createConnection }) => {
+        const c = createConnection(3000, '127.0.0.1');
+        c.on('connect', () => { c.end(); clearInterval(iv); resolve(); });
+        c.on('error', () => { if (attempts > 20) { clearInterval(iv); resolve(); } });
+      });
+    }, 1000);
+  });
+
+  console.log('✓ Dashboard: http://localhost:3000');
+
+  // Open browser
+  try {
+    const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+    execSync(cmd + ' http://localhost:3000', { stdio: 'ignore' });
+    console.log('✓ Browser opened');
+  } catch { console.log('⚠ Open http://localhost:3000 manually'); }
+
+  console.log('\\n🍐 Node running!');
+  rl.close();
+}
+main().catch((e) => { console.error(e.message); process.exit(1); });`;
 
   return (
     <div className="space-y-4 pb-24">
@@ -216,7 +272,7 @@ h2{color:#fff;}p{color:#94a3b8;}button{padding:14px 28px;border-radius:12px;bord
             disabled={downloading}
             className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
-            {downloading ? 'Building Setup Bundle...' : 'Download Setup Bundle (.zip)'}
+            {downloading ? 'Preparing setup.js...' : 'Download setup.js'}
           </button>
         </div>
       )}
@@ -228,7 +284,7 @@ h2{color:#fff;}p{color:#94a3b8;}button{padding:14px 28px;border-radius:12px;bord
             <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Extract the zip, then run <code className="bg-black/20 px-1 rounded">node setup.js</code> in your terminal. It installs dependencies, starts the node, and opens the dashboard automatically. Phone: the embed script auto-installs when users opt in — no Docker needed.
+            Run <code className="bg-black/20 px-1 rounded">node setup.js</code> in your terminal. It checks prerequisites, installs dependencies, starts the node, and opens the dashboard automatically — no extraction needed. Phone: the embed script auto-installs when users opt in.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">
@@ -1107,9 +1163,9 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
                 <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">2</div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-white mb-1">Confirm & Download Router</h4>
+                  <h4 className="font-medium text-white mb-1">Download setup.js</h4>
                   <p className="text-sm text-dark-300 mb-2">
-                    Preview the shared protocol multisigs. Download docker-compose.yml and run docker-compose up -d to start earning.
+                    Download the single setup.js file — your EVM address is pre-configured. Run node setup.js to auto-install and start earning.
                   </p>
                   <div className="flex items-center gap-2 text-xs text-indigo-300">
                     <Network className="w-3 h-3" />
@@ -1258,10 +1314,10 @@ const status = inference.getStatus();`}</pre>
               Getting Started
             </h3>
             <div className="space-y-4">
-              <DocStep number="1" title="Run the Node (Any Platform)" desc="Desktop: Docker (docker-compose up -d) or npm (npm install && npm start). Phone: the embed script auto-installs when users opt in — no separate install needed." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
-              <DocStep number="2" title="Configure Your EVM Payout Address" desc="Set MACHINE_OWNER_EVM in your .env or config.json. This is where you receive your 70% monthly share. Protocol multisigs are shared — no generation needed." />
-              <DocStep number="3" title="Start Earning" desc="docker-compose up -d or bash start.sh starts the inference router and all 5 miners. Dashboard at localhost:3000." />
-              <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address to your app's HTML. Phone users opt in and the runtime auto-installs — no Docker required on mobile." />
+              <DocStep number="1" title="Download setup.js" desc="Download the single setup.js file from this page. It has your EVM address pre-configured. No zip extraction needed." />
+              <DocStep number="2" title="Run node setup.js" desc="Open a terminal in the same folder and run: node setup.js. The wizard checks Node.js 18+, asks you to confirm your EVM address, installs dependencies, starts the node, and opens the dashboard." />
+              <DocStep number="3" title="Start Earning" desc="The node runs in the background on port 3000. Dashboard shows real-time earnings from all 5 miners. Monthly payouts: 70% to you, 30% to app developer." />
+              <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address to your app's HTML. Phone users opt in and the runtime auto-installs — no Docker or separate app required on mobile." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
             </div>
           </div>
 
