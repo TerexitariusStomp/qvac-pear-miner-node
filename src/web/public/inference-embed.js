@@ -1,0 +1,212 @@
+/**
+ * QVAC-Pear Inference Embed Script
+ * Auto-detects idle compute and connects to mining networks
+ * User ID must be affiliated with EVM address for inference resource confirmation
+ */
+
+(function() {
+  'use strict';
+
+  const script = document.currentScript;
+  const appId = script.getAttribute('data-app-id');
+  const autoInstall = script.hasAttribute('auto-install');
+  
+  if (!appId) {
+    console.error('QVAC-Pear Embed: data-app-id is required');
+    return;
+  }
+
+  // Check for EVM wallet connection for resource confirmation
+  let evmAddress = null;
+  
+  // Check for existing wallet connection
+  if (window.ethereum && window.ethereum.selectedAddress) {
+    evmAddress = window.ethereum.selectedAddress;
+  }
+  
+  // Configuration
+  const config = {
+    appId: appId,
+    evmAddress: evmAddress,
+    autoInstall: autoInstall,
+    apiEndpoint: 'https://api.qvac-pear.io',
+    version: '1.0.0'
+  };
+
+  /**
+   * Initialize the embed script
+   */
+  async function initialize() {
+    console.log('QVAC-Pear Embed: Initializing with app ID:', appId);
+    
+    // Check for EVM address affiliation
+    if (!evmAddress) {
+      console.warn('QVAC-Pear Embed: No EVM wallet connected. User ID must be affiliated with EVM address for inference resource confirmation.');
+      
+      if (autoInstall) {
+        // Request wallet connection if auto-install is enabled
+        try {
+          await connectWallet();
+        } catch (error) {
+          console.error('QVAC-Pear Embed: Failed to connect wallet:', error);
+        }
+      }
+    }
+    
+    // Auto-detect idle compute
+    detectIdleCompute();
+    
+    // Connect to mining networks if auto-install is enabled
+    if (autoInstall) {
+      connectToMiningNetworks();
+    }
+  }
+
+  /**
+   * Connect to EVM wallet
+   */
+  async function connectWallet() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ 
+          method: 'eth_requestAccounts' 
+        });
+        evmAddress = accounts[0];
+        config.evmAddress = evmAddress;
+        console.log('QVAC-Pear Embed: Wallet connected:', evmAddress);
+      } catch (error) {
+        console.error('QVAC-Pear Embed: Wallet connection failed:', error);
+        throw error;
+      }
+    } else {
+      throw new Error('No Web3 wallet detected');
+    }
+  }
+
+  /**
+   * Detect idle compute resources
+   */
+  function detectIdleCompute() {
+    // Check CPU usage
+    const cpuCores = navigator.hardwareConcurrency || 4;
+    
+    // Check memory
+    const memory = navigator.deviceMemory || 8; // GB
+    
+    // Check GPU (if available)
+    const gpuInfo = getGPUInfo();
+    
+    console.log('QVAC-Pear Embed: Detected compute resources:', {
+      cpuCores: cpuCores,
+      memory: memory + 'GB',
+      gpu: gpuInfo
+    });
+    
+    // Report to API
+    reportComputeResources({
+      cpuCores,
+      memory,
+      gpu: gpuInfo
+    });
+  }
+
+  /**
+   * Get GPU information
+   */
+  function getGPUInfo() {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    
+    if (!gl) return null;
+    
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!debugInfo) return null;
+    
+    return gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+  }
+
+  /**
+   * Connect to mining networks
+   */
+  function connectToMiningNetworks() {
+    console.log('QVAC-Pear Embed: Connecting to mining networks...');
+    
+    // Connect to QVAC-Pear mining networks
+    // This would establish connections to:
+    // - Cortensor (Arbitrum testnet)
+    // - Chutes (Bittensor)
+    // - Fortytwo-Network (EVM)
+    // - Earnidle (Solana)
+    // - Routstr (Nostr)
+    
+    // Register with the API
+    registerWithAPI();
+  }
+
+  /**
+   * Register with QVAC-Pear API
+   */
+  async function registerWithAPI() {
+    try {
+      const response = await fetch(`${config.apiEndpoint}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          appId: config.appId,
+          evmAddress: config.evmAddress,
+          version: config.version
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('QVAC-Pear Embed: Registered successfully:', data);
+      } else {
+        console.error('QVAC-Pear Embed: Registration failed');
+      }
+    } catch (error) {
+      console.error('QVAC-Pear Embed: API registration error:', error);
+    }
+  }
+
+  /**
+   * Report compute resources to API
+   */
+  async function reportComputeResources(resources) {
+    try {
+      await fetch(`${config.apiEndpoint}/report-resources`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          appId: config.appId,
+          evmAddress: config.evmAddress,
+          resources: resources
+        })
+      });
+    } catch (error) {
+      console.error('QVAC-Pear Embed: Resource reporting error:', error);
+    }
+  }
+
+  /**
+   * Expose public API
+   */
+  window.QVACPear = {
+    config: config,
+    connectWallet: connectWallet,
+    detectIdleCompute: detectIdleCompute,
+    connectToMiningNetworks: connectToMiningNetworks
+  };
+
+  // Initialize on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+
+})();

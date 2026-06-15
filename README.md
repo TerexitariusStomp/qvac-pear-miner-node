@@ -19,6 +19,20 @@ docker-compose up -d
 
 The node will be available at `http://localhost:3000`
 
+## One-Line Integration
+
+The embed script auto-detects idle compute and connects to mining networks. No AI model specification required for regular apps — only mining nodes need explicit model config.
+
+```html
+<script 
+  src="https://cdn.qvac-pear.io/inference-embed.js"
+  data-app-id="your-app-id"
+  auto-install>
+</script>
+```
+
+**Important:** The user's ID needs to be affiliated with an EVM address that confirms the use of their machine's inference resources. The embed script will automatically request wallet connection if `auto-install` is enabled.
+
 ### Docker Compose (Recommended)
 
 ```bash

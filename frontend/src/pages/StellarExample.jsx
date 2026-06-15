@@ -9,6 +9,7 @@ import {
   Cpu, 
   Activity, 
   ArrowLeft, 
+  ArrowRight,
   CheckCircle,
   Clock,
   Home,
@@ -226,21 +227,117 @@ const APP_SCREENS = {
   ai: {
     title: 'Astra AI',
     icon: Brain,
-    render: () => (
-      <div className="space-y-4 pb-24">
-        {/* AI Mode Indicator */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-white" />
-              <span className="font-semibold text-white">Astra AI Companion</span>
-            </div>
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Offline • Llama 3.2 1B</span>
-          </div>
-          <p className="text-sm text-green-100">On-device AI via QVAC • 72-chunk astronomy corpus • Works at dark sites</p>
-        </div>
+    render: () => {
+      const [showContributionBar, setShowContributionBar] = useState(true);
+      const [showDownload, setShowDownload] = useState(false);
+      const [downloading, setDownloading] = useState(false);
+      const [installed, setInstalled] = useState(false);
 
-        {/* Chat Interface */}
+      const handleContributeYes = () => {
+        setShowContributionBar(false);
+        setShowDownload(true);
+      };
+
+      const handleContributeNo = () => {
+        setShowContributionBar(false);
+      };
+
+      const handleDownload = () => {
+        setDownloading(true);
+        // Simulate download and install
+        setTimeout(() => {
+          setDownloading(false);
+          setInstalled(true);
+          setShowDownload(false);
+        }, 3000);
+      };
+
+      return (
+        <div className="space-y-4 pb-24">
+          {/* Idle Inference Contribution Bar */}
+          {showContributionBar && (
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4 animate-pulse">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-5 h-5 text-white" />
+                  <span className="font-semibold text-white">Contribute Idle Inference & Earn</span>
+                </div>
+                <Zap className="w-5 h-5 text-yellow-300" />
+              </div>
+              <p className="text-sm text-indigo-100 mb-3">
+                Your device can earn rewards by processing AI inference tasks when idle. Connects to Earnidle, Fortytwo, Cortensor, and Chutes networks.
+              </p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleContributeYes}
+                  className="flex-1 py-2 bg-white text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-50 transition-colors"
+                >
+                  Yes, I want to earn
+                </button>
+                <button 
+                  onClick={handleContributeNo}
+                  className="px-4 py-2 bg-indigo-700/50 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+                >
+                  No thanks
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Download Button */}
+          {showDownload && (
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Download className="w-5 h-5 text-white" />
+                  <span className="font-semibold text-white">Download Inference Router</span>
+                </div>
+              </div>
+              <p className="text-sm text-green-100 mb-3">
+                Download the QVAC-Pear inference router to start earning from idle compute.
+              </p>
+              <button 
+                onClick={handleDownload}
+                disabled={downloading}
+                className="w-full py-2 bg-white text-green-600 rounded-lg font-medium text-sm hover:bg-green-50 transition-colors disabled:opacity-50"
+              >
+                {downloading ? 'Downloading...' : 'Download & Install'}
+              </button>
+            </div>
+          )}
+
+          {/* Installed Success */}
+          {installed && (
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="w-5 h-5 text-green-300" />
+                <span className="font-semibold text-white">Inference Router Active</span>
+              </div>
+              <p className="text-sm text-blue-100">
+                Routing inference to: Earnidle, Fortytwo, Cortensor, Chutes. Earning rewards from idle compute.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Earnidle</span>
+                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Fortytwo</span>
+                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Cortensor</span>
+                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Chutes</span>
+              </div>
+            </div>
+          )}
+
+          {/* AI Mode Indicator */}
+          <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-white" />
+                <span className="font-semibold text-white">Astra AI Companion</span>
+              </div>
+              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Offline • Llama 3.2 1B</span>
+            </div>
+            <p className="text-sm text-green-100">On-device AI via QVAC • 72-chunk astronomy corpus • Works at dark sites</p>
+          </div>
+
+          {/* Chat Interface */}
         <div className="space-y-3 max-h-[300px] overflow-y-auto">
           <ChatMessage 
             sender="ai" 
@@ -287,7 +384,8 @@ const APP_SCREENS = {
           </div>
         </div>
       </div>
-    )
+      )
+    }
   },
   camera: {
     title: 'Camera',
