@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#1a1a2e">
+  <link rel="manifest" href="manifest.json">
   <title>QVAC-Pear Miner</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -162,13 +163,28 @@
     function pauseMining() {
       mining = false;
       document.getElementById('opt-in-btn').classList.remove('hidden');
+      document.getElementById('opt-in-btn').textContent = 'Resume Earning';
       document.getElementById('pause-btn').classList.add('hidden');
-      document.querySelector('.status-text').textContent = 'Paused';
+      document.querySelector('.status-text').textContent = 'Paused — click Resume to keep earning';
       document.querySelector('.status-dot').style.background = '#f59e0b';
       if (window.QVACInference && window.QVACInference.pause) {
         window.QVACInference.pause();
       }
     }
+
+    // Service Worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then((reg) => console.log('SW registered:', reg.scope))
+        .catch((err) => console.log('SW failed:', err));
+    }
+
+    // PWA Install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
   </script>
 </body>
 </html>

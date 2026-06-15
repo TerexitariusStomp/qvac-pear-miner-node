@@ -63,30 +63,7 @@ function AIScreen() {
     setShowDownload(true);
   };
 
-  const handleDownload = () => {
-    setDownloading(true);
-
-    const ua = navigator.userAgent;
-    let os = 'linux';
-    if (ua.indexOf('Win') !== -1) os = 'win';
-    else if (ua.indexOf('Mac') !== -1) os = 'mac';
-
-    let content = '', filename = '', mime = 'text/plain';
-
-    if (os === 'win') {
-      filename = 'setup.bat';
-      mime = 'application/bat';
-      content = `@echo off\r\necho ======================================\r\necho  QVAC-Pear Miner Installer\r\necho ======================================\r\necho.\r\necho Checking Docker...\r\ndocker --version >nul 2>&1\r\nif errorlevel 1 (\r\n  echo.\r\n  echo Docker is NOT installed.\r\n  echo Please download and install Docker Desktop from:\r\n  echo https://www.docker.com/products/docker-desktop/\r\n  echo.\r\n  echo After installing, close this window and double-click setup.bat again.\r\n  pause\r\n  exit /b 1\r\n)\r\necho Docker found.\r\necho.\r\necho Downloading QVAC-Pear Miner...\r\nif not exist ".\\qvac-pear-miner-node" (\r\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git\r\n  if errorlevel 1 (\r\n    echo Git not found. Please install Git from https://git-scm.com/download/win\r\n    pause\r\n    exit /b 1\r\n  )\r\n)\r\ncd qvac-pear-miner-node\r\necho Building and starting container...\r\nset MACHINE_OWNER_EVM=${evmAddress}\r\nset APP_ID=protocol-default\r\ndocker-compose up -d --build\r\nif errorlevel 1 (\r\n  echo Docker Compose failed. Make sure Docker Desktop is running.\r\n  pause\r\n  exit /b 1\r\n)\r\necho.\r\necho Waiting for server...\r\ntimeout /t 15 /nobreak >nul\r\necho Opening dashboard...\r\nstart http://localhost:3000\r\necho.\r\necho ======================================\r\necho  Done! Dashboard opened in browser.\r\necho  The node is running inside a Docker\r\necho  container for your safety.\r\necho ======================================\r\npause\r\n`;
-    } else if (os === 'mac') {
-      filename = 'setup.command';
-      mime = 'application/x-macos';
-      content = `#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner Installer"\necho "========================================"\necho\necho "Checking Docker..."\nif ! command -v docker &> /dev/null; then\n  echo "Docker not found. Please install Docker Desktop from https://www.docker.com/products/docker-desktop/"\n  exit 1\nfi\ndocker --version\necho\necho "Downloading QVAC-Pear Miner..."\nif [ ! -d "qvac-pear-miner-node" ]; then\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git || { echo "Git not found. Install Xcode Command Line Tools."; exit 1; }\nfi\ncd qvac-pear-miner-node\necho "Building and starting container..."\nexport MACHINE_OWNER_EVM=${evmAddress}\nexport APP_ID=protocol-default\ndocker-compose up -d --build || { echo "Docker Compose failed. Make sure Docker Desktop is running."; exit 1; }\necho\necho "Waiting for server..."\nsleep 15\necho "Opening dashboard..."\nopen http://localhost:3000\necho\necho "========================================"\necho "  Done! Dashboard opened."\necho "  The node runs inside a Docker"\necho "  container for your safety."\necho "========================================"\nread -p "Press Enter to close"\n`;
-    } else {
-      filename = 'setup.sh';
-      mime = 'application/x-sh';
-      content = `#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner Installer"\necho "========================================"\necho\necho "Checking Docker..."\nif ! command -v docker &> /dev/null; then\n  echo "Docker not found. Please install it:"\n  echo "  sudo apt install docker.io docker-compose   (Debian/Ubuntu)"\n  echo "  sudo dnf install docker docker-compose       (Fedora)"\n  echo "  Or visit: https://docs.docker.com/engine/install/"\n  exit 1\nfi\ndocker --version\necho\necho "Downloading QVAC-Pear Miner..."\nif [ ! -d "qvac-pear-miner-node" ]; then\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git || { echo "Git not found. Install git."; exit 1; }\nfi\ncd qvac-pear-miner-node\necho "Building and starting container..."\nexport MACHINE_OWNER_EVM=${evmAddress}\nexport APP_ID=protocol-default\ndocker-compose up -d --build || { echo "Docker Compose failed. Make sure Docker is running."; exit 1; }\necho\necho "Waiting for server..."\nsleep 15\necho "Opening dashboard..."\nxdg-open http://localhost:3000 || x-www-browser http://localhost:3000 || echo "Please open http://localhost:3000"\necho\necho "========================================"\necho "  Done!"\necho "  The node runs inside a Docker"\necho "  container for your safety."\necho "========================================"\nread -p "Press Enter to close"\n`;
-    }
-
+  const downloadFile = (content, filename, mime) => {
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -96,12 +73,38 @@ function AIScreen() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownload = () => {
+    setDownloading(true);
+
+    const ua = navigator.userAgent;
+    let os = 'linux';
+    if (ua.indexOf('Win') !== -1) os = 'win';
+    else if (ua.indexOf('Mac') !== -1) os = 'mac';
+
+    let startContent = '', stopContent = '', startFile = '', stopFile = '';
+
+    if (os === 'win') {
+      startFile = 'start-node.bat';
+      stopFile = 'stop-node.bat';
+      startContent = `@echo off\r\necho ======================================\r\necho  QVAC-Pear Miner - START\r\necho ======================================\r\necho.\r\necho Checking Docker...\r\ndocker --version >nul 2>&1\r\nif errorlevel 1 (\r\n  echo.\r\n  echo Docker is NOT installed.\r\n  echo Please download and install Docker Desktop from:\r\n  echo https://www.docker.com/products/docker-desktop/\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\necho Docker found.\r\necho.\r\necho Downloading QVAC-Pear Miner...\r\nif not exist ".\\qvac-pear-miner-node" (\r\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git\r\n  if errorlevel 1 (\r\n    echo Git not found. Please install Git from https://git-scm.com/download/win\r\n    pause\r\n    exit /b 1\r\n  )\r\n)\r\ncd qvac-pear-miner-node\r\necho Building and starting container...\r\nset MACHINE_OWNER_EVM=${evmAddress}\r\nset APP_ID=protocol-default\r\ndocker-compose up -d --build\r\nif errorlevel 1 (\r\n  echo Docker Compose failed. Make sure Docker Desktop is running.\r\n  pause\r\n  exit /b 1\r\n)\r\necho.\r\necho Waiting for server...\r\ntimeout /t 15 /nobreak >nul\r\necho Opening dashboard...\r\nstart http://localhost:3000\r\necho.\r\necho ======================================\r\necho  Node is RUNNING! Dashboard opened.\r\necho  The node is inside a Docker container.\r\necho  To stop, double-click stop-node.bat\r\necho ======================================\r\npause\r\n`;
+      stopContent = `@echo off\r\necho ======================================\r\necho  QVAC-Pear Miner - STOP\r\necho ======================================\r\necho.\r\necho Stopping node container...\r\ncd qvac-pear-miner-node 2>nul\r\ndocker-compose down\r\necho.\r\necho Node stopped. You can close this window.\r\npause\r\n`;
+    } else {
+      startFile = 'start-node.sh';
+      stopFile = 'stop-node.sh';
+      startContent = `#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner - START"\necho "========================================"\necho\necho "Checking Docker..."\nif ! command -v docker &> /dev/null; then\n  echo "Docker not found. Please install it:"\n  echo "  macOS: https://www.docker.com/products/docker-desktop/"\n  echo "  Linux: sudo apt install docker.io docker-compose"\n  exit 1\nfi\ndocker --version\necho\necho "Downloading QVAC-Pear Miner..."\nif [ ! -d "qvac-pear-miner-node" ]; then\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git || { echo "Git not found."; exit 1; }\nfi\ncd qvac-pear-miner-node\necho "Building and starting container..."\nexport MACHINE_OWNER_EVM=${evmAddress}\nexport APP_ID=protocol-default\ndocker-compose up -d --build || { echo "Docker Compose failed."; exit 1; }\necho\necho "Waiting for server..."\nsleep 15\necho "Opening dashboard..."\nopen http://localhost:3000 2>/dev/null || xdg-open http://localhost:3000 2>/dev/null || echo "Please open http://localhost:3000"\necho\necho "========================================"\necho "  Node is RUNNING!"\necho "  To stop, run: bash stop-node.sh"\necho "========================================"\nread -p "Press Enter to close"\n`;
+      stopContent = `#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner - STOP"\necho "========================================"\necho\necho "Stopping node container..."\ncd qvac-pear-miner-node 2>/dev/null || true\ndocker-compose down\necho\necho "Node stopped."\n`;
+    }
+
+    downloadFile(startContent, startFile, 'text/plain');
+    setTimeout(() => downloadFile(stopContent, stopFile, 'text/plain'), 500);
 
     setTimeout(() => {
       setDownloading(false);
       setInstalled(true);
       setShowDownload(false);
-    }, 600);
+    }, 1200);
   };
 
   return (
@@ -187,7 +190,7 @@ function AIScreen() {
             <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Double-click the downloaded file to run the installer. It checks for Docker, downloads the repo, builds a container, and starts the node inside it — completely isolated from your machine. Phone: the embed script auto-installs when users opt in.
+            Two files downloaded: <code className="bg-black/20 px-1 rounded">start-node</code> to start earning (runs in a Docker container), and <code className="bg-black/20 px-1 rounded">stop-node</code> to stop. The node keeps running and earning until you click stop. Phone: the embed script auto-installs when users opt in.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">

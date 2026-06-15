@@ -92,18 +92,29 @@ MACHINE_OWNER_EVM=0x... APP_ID=your-app-id npm start
 The simplest way to install on desktop — fully containerized and isolated:
 
 1. Visit the dashboard and enter your EVM payout address
-2. Click **"Download Installer"** — the website auto-detects your OS and gives you the right file:
-   - **Windows**: `setup.bat` — double-click, a black window does everything
-   - **macOS**: `setup.command` — double-click, terminal opens automatically
-   - **Linux**: `setup.sh` — double-click or right-click → "Run as a Program"
-3. The script checks for Docker, downloads the repo, builds a container, and starts the node inside it
-4. Everything runs in an isolated Docker container — it cannot affect your machine
+2. Click **"Download Installer"** — the website auto-detects your OS and downloads **two files**:
+   - **Windows**: `start-node.bat` + `stop-node.bat`
+   - **macOS**: `start-node.sh` + `stop-node.sh`
+   - **Linux**: `start-node.sh` + `stop-node.sh`
+3. Double-click `start-node` — it checks for Docker, downloads the repo, builds a container, and starts the node
+4. The node keeps running and earning until you double-click `stop-node` to shut it down
+5. Everything runs in an isolated Docker container — it cannot affect your machine
 
-No terminal commands to memorize. No zip extraction. Fully containerized. One click to download, one double-click to run.
+No terminal commands to memorize. No zip extraction. Fully containerized. Start to earn, stop when done.
 
 ### Phone / Mobile
 
-No installation required. The embed script auto-installs the inference runtime when mobile users opt in within the host app. The script handles everything — no Docker, no separate app store download.
+No installation required for end users. The embed script auto-installs the inference runtime when mobile users opt in within the host app.
+
+**For testing the Android flow**, an APK build is available in `android-app/`. Build with Capacitor:
+```bash
+cd android-app
+npm install
+npx cap add android
+npx cap sync android
+npx cap build android
+```
+The APK outputs to `android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ```html
 <script
