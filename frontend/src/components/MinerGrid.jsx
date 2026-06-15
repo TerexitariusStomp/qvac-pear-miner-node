@@ -45,6 +45,7 @@ export default function MinerGrid({ miners }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Object.entries(miners).map(([key, miner]) => {
           const config = minerConfig[key]
+          if (!config) return null
           const Icon = config.icon
 
           return (
