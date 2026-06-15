@@ -1,6 +1,7 @@
 import { Logger } from './Logger.js';
 import { QVACInferenceLayer } from '../inference/QVACInferenceLayer.js';
 import { InferenceRouter } from '../inference/InferenceRouter.js';
+import { LocalLLM } from '../inference/LocalLLM.js';
 import { HypercoreStore } from '../storage/HypercoreStore.js';
 import { PearP2P } from '../p2p/PearP2P.js';
 import { MinerManager } from '../miners/MinerManager.js';
@@ -17,6 +18,7 @@ export class NodeManager {
     this.logger = new Logger('NodeManager');
     this.inferenceLayer = null;
     this.inferenceRouter = null;
+    this.localLLM = null;
     this.dataStore = null;
     this.p2pNetwork = null;
     this.minerManager = null;
@@ -71,6 +73,10 @@ export class NodeManager {
     // Initialize centralized inference router
     this.inferenceRouter = new InferenceRouter(this.inferenceLayer);
     await this.inferenceRouter.initialize();
+
+    // Initialize local LLM for AI writing
+    this.localLLM = new LocalLLM(this.config.inference?.localLLM || {});
+    await this.localLLM.initialize();
     
     // Initialize miner manager with task monitor and inference router
     this.minerManager = new MinerManager(this.config.miners, this.dataStore, this.taskMonitor, this.inferenceRouter);
@@ -166,6 +172,7 @@ export class NodeManager {
       nodeId: this.config.node.id,
       mode: this.timeScheduler?.getStatus(),
       inference: this.inferenceLayer?.getStatus(),
+      localLLM: this.localLLM?.getStatus(),
       inferenceRouter: this.inferenceRouter?.getStatus(),
       mining: this.minerManager?.getStatus(),
       tasks: this.taskMonitor?.getStatus(),

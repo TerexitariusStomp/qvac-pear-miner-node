@@ -63,6 +63,15 @@ export class WebServer {
     } else if (url.pathname === '/api/status' && req.method === 'GET') {
       await this.handleStatus(req, res);
       return;
+    } else if (url.pathname === '/api/ai-write' && req.method === 'POST') {
+      await this.handleAIWrite(req, res);
+      return;
+    } else if (url.pathname === '/api/ai-status' && req.method === 'GET') {
+      await this.handleAIStatus(req, res);
+      return;
+    } else if (url.pathname === '/api/ai-docs' && req.method === 'GET') {
+      await this.handleAIDocs(req, res);
+      return;
     }
 
     // Static files from built frontend
@@ -206,6 +215,113 @@ export class WebServer {
     }
   }
   
+  async handleAIWrite(req, res) {
+    try {
+      const body = await this.parseBody(req);
+      const prompt = body.prompt?.trim();
+      const title = body.title?.trim();
+
+      if (!prompt) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Prompt is required' }));
+        return;
+      }
+
+      // Get LocalLLM from node manager
+      const localLLM = this.nodeManager?.localLLM;
+      if (!localLLM) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'LocalLLM not initialized' }));
+        return;
+      }
+
+      this.logger.info(`AI write request: ${title || prompt}`);
+      const result = await localLLM.generate(prompt, { title });
+
+      // Store in Hypercore via storage module
+      const docId = `ai-${Date.now()}`;
+      const doc = {
+        id: docId,
+        title: result.title,
+        body: result.body,
+        source: result.source,
+        model: result.model,
+        prompt,
+        createdAt: Date.now()
+      };
+
+      if (this.nodeManager?.storage) {
+        await this.nodeManager.storage.appendAIDoc(doc);
+      }
+
+      // Also write to local markdown for OpenViking indexing
+      const docPath = path.join(process.cwd(), 'data', 'ai-docs', `${docId}.md`);
+      await fs.mkdir(path.dirname(docPath), { recursive: true });
+      const mdContent = `# ${result.title}\n\n${result.body}\n\n<!-- source: ${result.source} | model: ${result.model} | prompt: ${prompt} -->\n`;
+      await fs.writeFile(docPath, mdContent);
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({ success: true, data: doc }));
+    } catch (error) {
+      this.logger.error('Error handling AI write:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+  }
+
+  async handleAIStatus(req, res) {
+    try {
+      const localLLM = this.nodeManager?.localLLM;
+      const status = localLLM ? localLLM.getStatus() : { available: false };
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({ success: true, data: status }));
+    } catch (error) {
+      this.logger.error('Error handling AI status:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+  }
+
+  async handleAIDocs(req, res) {
+    try {
+      const docsDir = path.join(process.cwd(), 'data', 'ai-docs');
+      const files = [];
+      try {
+        const entries = await fs.readdir(docsDir);
+        for (const entry of entries.filter(e => e.endsWith('.md'))) {
+          const content = await fs.readFile(path.join(docsDir, entry), 'utf-8');
+          const titleMatch = content.match(/^#\s(.+)$/m);
+          files.push({
+            id: entry.replace('.md', ''),
+            title: titleMatch ? titleMatch[1] : entry,
+            createdAt: (await fs.stat(path.join(docsDir, entry))).mtime.getTime()
+          });
+        }
+      } catch {
+        // Directory may not exist yet
+      }
+
+      files.sort((a, b) => b.createdAt - a.createdAt);
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({ success: true, data: files }));
+    } catch (error) {
+      this.logger.error('Error handling AI docs:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+  }
+
   async parseBody(req) {
     return new Promise((resolve, reject) => {
       let body = '';

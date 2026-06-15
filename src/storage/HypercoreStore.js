@@ -96,7 +96,35 @@ export class HypercoreStore {
     }
     return true;
   }
-  
+
+  async appendAIDoc(doc) {
+    if (!this.isRunning) {
+      throw new Error('Data store not running');
+    }
+    const entry = { type: 'ai-doc', ...doc };
+    const seq = await this.core.append(JSON.stringify(entry));
+    this.logger.info(`Appended AI doc "${doc.title}" at sequence ${seq}`);
+    return seq;
+  }
+
+  async getAIDocs(limit = 50) {
+    if (!this.isRunning) return [];
+    const results = [];
+    const length = await this.getLength();
+    const start = Math.max(0, length - limit);
+    for (let i = length - 1; i >= start; i--) {
+      try {
+        const data = await this.get(i);
+        if (data.type === 'ai-doc') {
+          results.push(data);
+        }
+      } catch {
+        // skip corrupted entries
+      }
+    }
+    return results;
+  }
+
   getStatus() {
     return {
       running: this.isRunning,

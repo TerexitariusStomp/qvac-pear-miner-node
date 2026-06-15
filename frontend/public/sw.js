@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qvac-pear-miner-v1';
+const CACHE_NAME = 'qvac-pear-miner-v2';
 const PRECACHE = [
   './',
   './index.html',
@@ -13,27 +13,46 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const isNavigation = request.mode === 'navigate';
+  const isAsset = /\.(js|css|svg|png|woff2?)$/.test(request.url);
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        // Cache assets (js, css, svg) for offline use
-        if (event.request.method === 'GET' && 
-            (event.request.url.match(/\.(js|css|svg|png|woff2?)$/))) {
+    caches.match(request).then((cached) => {
+      // Navigation: network-first, fallback to cache
+      if (isNavigation) {
+        return fetch(request)
+          .then((response) => {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            return response;
+          })
+          .catch(() => cached || caches.match('./index.html'));
+      }
+
+      // Assets: return cached immediately, then update in background
+      if (cached && isAsset) {
+        fetch(request).then((response) => {
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+        }).catch(() => {});
+        return cached;
+      }
+
+      return fetch(request).then((response) => {
+        if (isAsset && request.method === 'GET') {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      }).catch(() => {
-        // Fallback to index.html for navigation requests (SPA)
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
+      }).catch(() => cached);
     })
   );
 });
