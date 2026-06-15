@@ -106,15 +106,23 @@ No terminal commands to memorize. No zip extraction. Fully containerized. Start 
 
 No installation required for end users. The embed script auto-installs the inference runtime when mobile users opt in within the host app.
 
-**For testing the Android flow**, an APK build is available in `android-app/`. Build with Capacitor:
+**For testing the Android flow**, build the APK with the provided script:
 ```bash
-cd android-app
+cd qvac-pear-miner-node
+bash build-apk.sh
+```
+This script installs dependencies, builds the frontend, adds the Android platform, and outputs the APK.
+
+Or manually:
+```bash
+cd qvac-pear-miner-node/android-app
 npm install
 npx cap add android
 npx cap sync android
 npx cap build android
 ```
-The APK outputs to `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+The APK outputs to `android-app/android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ```html
 <script

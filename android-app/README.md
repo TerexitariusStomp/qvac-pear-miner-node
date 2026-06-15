@@ -12,8 +12,9 @@ This is a Capacitor-wrapped Android app for testing the QVAC-Pear Miner embed fl
 
 ### 1. Install dependencies
 
+From the repo root:
 ```bash
-cd android-app
+cd qvac-pear-miner-node/android-app
 npm install
 ```
 
