@@ -33,26 +33,28 @@ The embed script auto-detects idle compute and connects to mining networks. No A
 
 **Important:** The user's ID needs to be affiliated with an EVM address that confirms the use of their machine's inference resources. The embed script will automatically request wallet connection if `auto-install` is enabled.
 
-## Multisig Fund Management
+## Protocol Multisig Fund Management
 
-Only an **EVM wallet address** is required from the user. All other network addresses are auto-generated as multisigs:
+The protocol maintains **shared multisigs** for Nostr and Bittensor. All applications use the same protocol addresses — no per-app generation required.
 
-- **Nostr (Routstr)** — Cashu NIP-60 P2SH multisig (2-of-3), auto-generated from EVM address
-- **Bittensor (Chutes)** — Substrate multisig (2-of-3), auto-generated from EVM address
-- **EVM (Cortensor/Fortytwo)** — Direct deposit to provided address
+- **Nostr (Routstr)** — Cashu NIP-60 P2SH protocol multisig (2-of-3)
+- **Bittensor (Chutes)** — Substrate protocol multisig (2-of-3)
+- **EVM (Cortensor/Fortytwo)** — Direct deposit to machine owner address
 - **Solana (Earnidle)** — Direct deposit (separate wallet)
 
-### Weekly Fund Sweep
+### Monthly Revenue Split
 
-Funds accumulate in Nostr/Bittensor multisigs. Every week, an automated script initiates a sweep to the EVM address:
+Funds accumulate in protocol multisigs. Every month, an automated script distributes earnings:
 
-1. **Sunday 00:00 UTC** — Sweep initiated, all parties notified
-2. **48-hour denial window** — Multisig members can cancel via `node scripts/weekly-fund-sweep.js --deny <sweep-id>`
-3. **Tuesday 00:00 UTC** — If not denied, funds move to EVM multisig
+1. **1st of month 00:00 UTC** — Monthly sweep initiated
+2. **48-hour denial window** — Multisig members can cancel via `node scripts/monthly-fund-sweep.js --deny <sweep-id>`
+3. **3rd of month 00:00 UTC** — If not denied, funds are distributed:
+   - **70%** → Machine owner (the EVM address provided by the user)
+   - **30%** → App developer (identified by `data-app-id`)
 
 To deny a sweep:
 ```bash
-node scripts/weekly-fund-sweep.js --deny sweep-nostr-1234567890
+node scripts/monthly-fund-sweep.js --deny monthly-nostr-1234567890
 ```
 
 ### Docker Compose (Recommended)
