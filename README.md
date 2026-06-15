@@ -89,17 +89,17 @@ MACHINE_OWNER_EVM=0x... APP_ID=your-app-id npm start
 
 ### Quick Start (Desktop)
 
-The simplest way to install on desktop is a **single file**:
+The simplest way to install on desktop:
 
-1. Download `setup.js` from the dashboard
-2. **Run `node setup.js`** — an interactive CLI wizard guides you through:
-   - Prerequisite checks (Node.js 18+, Docker optional)
+1. Download `setup.html` from the dashboard
+2. **Double-click `setup.html`** — a GUI wizard opens in your browser with:
+   - Prerequisite check guide (Node.js 18+, Docker optional)
    - EVM payout address confirmation (pre-filled from download)
-   - Dependency installation
-   - Auto-starting the node
-   - Opening the dashboard in your browser
+   - One-click copy of the exact terminal command
+   - Auto-detection of when the node is ready
+   - Direct link to open the dashboard
 
-No zip extraction needed. One file, one command, and you're running.
+No zip extraction. No memorizing commands. Double-click, follow the GUI, copy-paste one command, done.
 
 ### Phone / Mobile
 

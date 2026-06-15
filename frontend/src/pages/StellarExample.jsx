@@ -66,21 +66,12 @@ function AIScreen() {
   const handleDownload = async () => {
     setDownloading(true);
 
-    // Fetch the real setup.js from the server, or generate inline
-    let setupJs = '';
-    try {
-      const res = await fetch('/setup.js');
-      setupJs = await res.text();
-    } catch (e) {
-      // Fallback: minimal inline setup script
-      setupJs = generateInlineSetup(evmAddress);
-    }
-
-    const blob = new Blob([setupJs], { type: 'application/javascript' });
+    const html = generateSetupHtml(evmAddress);
+    const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'setup.js';
+    a.download = 'setup.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -93,113 +84,167 @@ function AIScreen() {
     }, 800);
   };
 
-  const generateInlineSetup = (addr) => `#!/usr/bin/env node
-/**
- * QVAC-Pear Miner Node — Self-Contained Setup
- * Run: node setup.js
- */
-import { execSync, spawn } from 'child_process';
-import { createServer } from 'http';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import readline from 'readline';
+  const generateSetupHtml = (addr) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QVAC-Pear Miner Setup</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#e0e0e0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.wizard{background:#0f0f23;border-radius:20px;border:1px solid rgba(255,255,255,0.1);max-width:540px;width:100%;padding:40px;box-shadow:0 25px 50px rgba(0,0,0,0.5)}
+.progress{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:30px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:2px;transition:width .4s ease}
+.step{display:none}
+.step.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+h2{font-size:1.5rem;margin-bottom:8px;color:#fff}
+p{color:#94a3b8;margin-bottom:24px;line-height:1.5;font-size:.95rem}
+.logo{width:64px;height:64px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;font-size:28px}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s;margin-top:20px;background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(99,102,241,.3)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:rgba(255,255,255,.1);color:#fff;margin-top:10px}
+.btn-secondary:hover{background:rgba(255,255,255,.15)}
+.nav{display:flex;gap:10px}
+.nav .btn{flex:1;margin-top:20px}
+.check{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.check:last-child{border-bottom:none}
+.check-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ok{background:#22c55e;color:#fff}
+.fail{background:rgba(239,68,68,.2);color:#ef4444}
+.pending{background:rgba(255,255,255,.1);color:#94a3b8}
+.check-title{color:#fff;font-size:.9rem}
+.check-desc{color:#64748b;font-size:.75rem}
+input[type="text"]{width:100%;padding:12px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:.95rem;margin-bottom:16px;outline:none}
+input:focus{border-color:#6366f1}
+input.error{border-color:#ef4444}
+.code{background:#0a0a0a;border-radius:10px;padding:16px;font-family:'SF Mono',monospace;font-size:.85rem;color:#4ade80;margin:12px 0;word-break:break-all;border:1px solid rgba(255,255,255,.05);position:relative}
+.copy{position:absolute;top:8px;right:8px;padding:4px 10px;background:rgba(255,255,255,.1);border:none;border-radius:6px;color:#fff;font-size:.75rem;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.2)}
+.tag{display:inline-block;padding:4px 10px;background:rgba(99,102,241,.2);color:#a5b4fc;border-radius:6px;font-size:.75rem;margin-bottom:16px}
+.success{text-align:center;padding:20px 0}
+.success-circle{width:80px;height:80px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px;animation:scaleIn .4s ease}
+@keyframes scaleIn{from{transform:scale(0)}to{transform:scale(1)}}
+.hidden{display:none}
+.poll{color:#4ade80;font-size:.85rem;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wizard">
+<div class="progress"><div class="progress-fill" id="bar" style="width:20%"></div></div>
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const q = (prompt) => new Promise((resolve) => rl.question(prompt, resolve));
+<!-- Step 1 -->
+<div class="step active" id="s1">
+<div class="logo">🍐</div>
+<div class="tag">QVAC-Pear Miner</div>
+<h2>Welcome</h2>
+<p>This wizard will set up your inference router. Double-clicking this file opened the GUI — now let's get you earning.</p>
+<button class="btn" onclick="go(2)">Get Started</button>
+</div>
 
-async function main() {
-  console.log('\\n🍐 QVAC-Pear Miner Setup\\n');
+<!-- Step 2 -->
+<div class="step" id="s2">
+<h2>Check Prerequisites</h2>
+<p>Make sure Node.js 18+ is installed. Docker is optional.</p>
+<div id="checks">
+<div class="check"><div class="check-icon pending" id="c1">○</div><div><div class="check-title">Node.js 18+</div><div class="check-desc">Run <code>node --version</code> in your terminal</div></div></div>
+<div class="check"><div class="check-icon pending" id="c2">○</div><div><div class="check-title">npm</div><div class="check-desc">Comes with Node.js</div></div></div>
+<div class="check"><div class="check-icon pending" id="c3">○</div><div><div class="check-title">Docker (optional)</div><div class="check-desc">For containerized install</div></div></div>
+</div>
+<div class="nav">
+<button class="btn btn-secondary" onclick="go(1)">Back</button>
+<button class="btn" onclick="markReady()">I have Node.js installed</button>
+</div>
+</div>
 
-  // Check Node.js
-  let nodeVer;
-  try {
-    nodeVer = execSync('node --version', { encoding: 'utf-8' }).trim();
-    if (parseInt(nodeVer.slice(1)) < 18) { console.error('Node.js 18+ required'); process.exit(1); }
-    console.log('✓', nodeVer);
-  } catch { console.error('Node.js not found'); process.exit(1); }
+<!-- Step 3 -->
+<div class="step" id="s3">
+<h2>Configure</h2>
+<p>Your EVM payout address is pre-filled from the dashboard. Edit if needed.</p>
+<label style="color:#94a3b8;font-size:.85rem;margin-bottom:6px;display:block">EVM Payout Address</label>
+<input type="text" id="evm" value="${addr}">
+<label style="color:#94a3b8;font-size:.85rem;margin-bottom:6px;display:block">App ID</label>
+<input type="text" id="appid" value="protocol-default">
+<div class="nav">
+<button class="btn btn-secondary" onclick="go(2)">Back</button>
+<button class="btn" onclick="go(4)">Continue</button>
+</div>
+</div>
 
-  // Check npm
-  try { console.log('✓ npm v' + execSync('npm --version', { encoding: 'utf-8' }).trim()); }
-  catch { console.error('npm not found'); process.exit(1); }
+<!-- Step 4 -->
+<div class="step" id="s4">
+<h2>Run Setup</h2>
+<p>Copy the command below, paste it into your terminal, and press Enter. The setup script will install everything and start the node.</p>
+<div class="code" id="cmd">node setup.js
+<button class="copy" onclick="copyCmd()">Copy</button></div>
+<p style="font-size:.85rem;color:#64748b">If you don't have the repo yet, clone it first:</p>
+<div class="code">git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git
+<button class="copy" onclick="copyClone()">Copy</button></div>
+<div class="nav">
+<button class="btn btn-secondary" onclick="go(3)">Back</button>
+<button class="btn" onclick="go(5);startPoll()">I've run the command</button>
+</div>
+</div>
 
-  // Check Docker (optional)
-  let hasDocker = false;
-  try { execSync('docker --version', { stdio: 'ignore' }); hasDocker = true; console.log('✓ Docker'); }
-  catch { console.log('⚠ Docker not found — will use native mode'); }
+<!-- Step 5 -->
+<div class="step" id="s5">
+<div class="success">
+<div class="success-circle" id="sc" style="background:linear-gradient(135deg,#6366f1,#a855f7)">⏳</div>
+<h2 id="st">Waiting for Node...</h2>
+<p id="sp">The setup script is installing dependencies and starting the server. This usually takes 10-30 seconds.</p>
+<div class="poll" id="poll">Checking localhost:3000...</div>
+<button class="btn hidden" id="dash" onclick="window.open('http://localhost:3000','_blank')">Open Dashboard</button>
+</div>
+</div>
+</div>
 
-  // Choose method
-  let method = 'npm';
-  if (hasDocker) {
-    const c = await q('Docker (d) or native (n)? [n] ');
-    method = c.trim().toLowerCase().startsWith('d') ? 'docker' : 'npm';
-  }
-  console.log('✓ Method:', method);
-
-  // EVM address (pre-filled from download)
-  let evm = '${addr}';
-  const custom = await q('EVM address [' + evm.slice(0,8) + '...] (Enter to keep): ');
-  if (custom.trim()) evm = custom.trim();
-  console.log('✓ Payout:', evm.slice(0,10) + '...' + evm.slice(-6));
-
-  // App ID
-  const appId = (await q('App ID [protocol-default]: ')).trim() || 'protocol-default';
-
-  // Install
-  if (method === 'npm') {
-    console.log('\\n→ Installing dependencies...');
-    execSync('npm install', { stdio: 'inherit' });
-  }
-
-  // Write config
-  console.log('→ Writing config...');
-  const cfgPath = path.join(__dirname, 'config.json');
-  let cfg = {};
-  try { cfg = JSON.parse(await fs.readFile(cfgPath, 'utf-8')); } catch {}
-  cfg.multisig = cfg.multisig || {};
-  cfg.multisig.machineOwnerAddress = evm;
-  cfg.multisig.evmMultisigAddress = evm;
-  await fs.writeFile(cfgPath, JSON.stringify(cfg, null, 2));
-
-  // Start node
-  console.log('→ Starting node...');
-  const env = { ...process.env, MACHINE_OWNER_EVM: evm, APP_ID: appId };
-  if (method === 'docker') {
-    execSync('docker-compose up -d', { stdio: 'inherit', env });
-  } else {
-    const child = spawn('node', ['src/index.js'], { env, detached: true, stdio: 'ignore' });
-    child.unref();
-    console.log('✓ Node PID', child.pid);
-  }
-
-  // Wait for server
-  console.log('→ Waiting for dashboard...');
-  await new Promise((resolve) => {
-    let attempts = 0;
-    const iv = setInterval(() => {
-      attempts++;
-      import('net').then(({ createConnection }) => {
-        const c = createConnection(3000, '127.0.0.1');
-        c.on('connect', () => { c.end(); clearInterval(iv); resolve(); });
-        c.on('error', () => { if (attempts > 20) { clearInterval(iv); resolve(); } });
-      });
-    }, 1000);
-  });
-
-  console.log('✓ Dashboard: http://localhost:3000');
-
-  // Open browser
-  try {
-    const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-    execSync(cmd + ' http://localhost:3000', { stdio: 'ignore' });
-    console.log('✓ Browser opened');
-  } catch { console.log('⚠ Open http://localhost:3000 manually'); }
-
-  console.log('\\n🍐 Node running!');
-  rl.close();
+<script>
+let evm='${addr}';
+function go(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.getElementById('bar').style.width=(n*20)+'%';
+  updateCmd();
 }
-main().catch((e) => { console.error(e.message); process.exit(1); });`;
+function markReady(){
+  document.getElementById('c1').className='check-icon ok';document.getElementById('c1').textContent='✓';
+  document.getElementById('c2').className='check-icon ok';document.getElementById('c2').textContent='✓';
+  document.getElementById('c3').className='check-icon ok';document.getElementById('c3').textContent='✓';
+  go(3);
+}
+function updateCmd(){
+  const e=document.getElementById('evm');if(e)evm=e.value;
+  const a=document.getElementById('appid')?.value||'protocol-default';
+  const cmd='MACHINE_OWNER_EVM='+evm+' APP_ID='+a+' node setup.js';
+  const el=document.getElementById('cmd');if(el)el.innerHTML=cmd+'<button class="copy" onclick="copyCmd()">Copy</button>';
+}
+function copyCmd(){const t=document.getElementById('cmd').childNodes[0].textContent;navigator.clipboard.writeText(t).then(()=>alert('Copied!'));}
+function copyClone(){navigator.clipboard.writeText('git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git').then(()=>alert('Copied!'));}
+function startPoll(){
+  let tries=0;
+  const iv=setInterval(()=>{
+    tries++;
+    fetch('http://localhost:3000/api/status',{mode:'no-cors'}).then(()=>{
+      clearInterval(iv);
+      document.getElementById('sc').style.background='linear-gradient(135deg,#22c55e,#16a34a)';
+      document.getElementById('sc').textContent='✓';
+      document.getElementById('st').textContent='Node Running!';
+      document.getElementById('sp').textContent='Your QVAC-Pear Miner is active. Click below to open the dashboard.';
+      document.getElementById('poll').classList.add('hidden');
+      document.getElementById('dash').classList.remove('hidden');
+    }).catch(()=>{
+      document.getElementById('poll').textContent='Checking localhost:3000... (attempt '+tries+')';
+      if(tries>60){clearInterval(iv);document.getElementById('poll').textContent='Still waiting. If setup is complete, click below.';document.getElementById('dash').classList.remove('hidden');}
+    });
+  },2000);
+}
+document.getElementById('evm')?.addEventListener('input',updateCmd);
+document.getElementById('appid')?.addEventListener('input',updateCmd);
+</script>
+</body>
+</html>`;
 
   return (
     <div className="space-y-4 pb-24">
@@ -272,7 +317,7 @@ main().catch((e) => { console.error(e.message); process.exit(1); });`;
             disabled={downloading}
             className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
-            {downloading ? 'Preparing setup.js...' : 'Download setup.js'}
+            {downloading ? 'Preparing setup.html...' : 'Download setup.html'}
           </button>
         </div>
       )}
@@ -284,7 +329,7 @@ main().catch((e) => { console.error(e.message); process.exit(1); });`;
             <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Run <code className="bg-black/20 px-1 rounded">node setup.js</code> in your terminal. It checks prerequisites, installs dependencies, starts the node, and opens the dashboard automatically — no extraction needed. Phone: the embed script auto-installs when users opt in.
+            Double-click <code className="bg-black/20 px-1 rounded">setup.html</code> to open the GUI wizard. It will guide you through prerequisites, show the exact terminal command to run, and auto-detect when the node is ready. Phone: the embed script auto-installs when users opt in.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">
@@ -1163,9 +1208,9 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
                 <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">2</div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-white mb-1">Download setup.js</h4>
+                  <h4 className="font-medium text-white mb-1">Download setup.html</h4>
                   <p className="text-sm text-dark-300 mb-2">
-                    Download the single setup.js file — your EVM address is pre-configured. Run node setup.js to auto-install and start earning.
+                    Download the setup.html file — your EVM address is pre-configured. Double-click it to open the GUI wizard.
                   </p>
                   <div className="flex items-center gap-2 text-xs text-indigo-300">
                     <Network className="w-3 h-3" />
@@ -1314,9 +1359,9 @@ const status = inference.getStatus();`}</pre>
               Getting Started
             </h3>
             <div className="space-y-4">
-              <DocStep number="1" title="Download setup.js" desc="Download the single setup.js file from this page. It has your EVM address pre-configured. No zip extraction needed." />
-              <DocStep number="2" title="Run node setup.js" desc="Open a terminal in the same folder and run: node setup.js. The wizard checks Node.js 18+, asks you to confirm your EVM address, installs dependencies, starts the node, and opens the dashboard." />
-              <DocStep number="3" title="Start Earning" desc="The node runs in the background on port 3000. Dashboard shows real-time earnings from all 5 miners. Monthly payouts: 70% to you, 30% to app developer." />
+              <DocStep number="1" title="Download setup.html" desc="Download the setup.html file from this page. It has your EVM address pre-configured." />
+              <DocStep number="2" title="Double-click to open GUI" desc="Double-click setup.html to open the setup wizard in your browser. It will guide you through prerequisites, show the exact terminal command, and auto-detect when the node is running." />
+              <DocStep number="3" title="Start Earning" desc="The node runs on port 3000. Dashboard shows real-time earnings from all 5 miners. Monthly payouts: 70% to you, 30% to app developer." />
               <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address to your app's HTML. Phone users opt in and the runtime auto-installs — no Docker or separate app required on mobile." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
             </div>
           </div>
