@@ -28,7 +28,8 @@
     "@qvac/sdk": "^0.13.2",
     "hypercore": "^10.0.0",
     "hyperswarm": "^4.0.0",
-    "pear-runtime": "^1.0.0"
+    "pear-runtime": "^1.0.0",
+    "pm2": "^7.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0"

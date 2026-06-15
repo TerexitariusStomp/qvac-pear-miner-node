@@ -28,8 +28,21 @@ export class WebServer {
     this.logger.info('Starting web server...');
     
     this.server = createServer(async (req, res) => {
+      // CORS for all responses
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
       await this.handleRequest(req, res);
     });
+
+    // Increase server timeout for long AI generation (10 min)
+    this.server.timeout = 600000;
+    this.server.keepAliveTimeout = 620000;
     
     this.server.listen(this.port, () => {
       this.logger.info(`Web server listening on port ${this.port}`);
@@ -256,8 +269,8 @@ export class WebServer {
         createdAt: Date.now()
       };
 
-      if (this.nodeManager?.storage) {
-        await this.nodeManager.storage.appendAIDoc(doc);
+      if (this.nodeManager?.dataStore) {
+        await this.nodeManager.dataStore.appendAIDoc(doc);
       }
 
       // Also write to local markdown for OpenViking indexing

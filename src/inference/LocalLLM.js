@@ -11,11 +11,13 @@ export class LocalLLM {
     this.config = {
       model: config.model || 'llama-3.2-1b-instruct',
       qvacModelConst: config.qvacModelConst || null,
-      timeout: config.timeout || 120000,
+      timeout: config.timeout || 300000,
       ...config
     };
     this.logger = new Logger('LocalLLM');
     this.qvac = null;
+    this.modelId = null;       // Kept loaded between requests
+    this._loading = null;      // Promise guard to avoid double-load
   }
 
   async initialize() {
@@ -23,10 +25,39 @@ export class LocalLLM {
     try {
       this.qvac = await import('@qvac/sdk');
       this.logger.info(`QVAC SDK loaded: ${Object.keys(this.qvac).slice(0, 5).join(', ')}...`);
+      // Pre-load model now so first request is fast
+      await this._ensureModelLoaded();
     } catch (e) {
       this.logger.warn(`QVAC SDK not available (${e.message}) — demo mode active`);
       this.qvac = null;
     }
+  }
+
+  async _ensureModelLoaded() {
+    if (this.modelId) return this.modelId;
+    if (this._loading) return this._loading;
+
+    this._loading = (async () => {
+      const { loadModel, LLAMA_3_2_1B_INST_Q4_0 } = this.qvac;
+      const modelSrc = this.config.qvacModelConst || LLAMA_3_2_1B_INST_Q4_0;
+      this.logger.info(`Loading QVAC model (once)...`);
+      this.modelId = await loadModel({
+        modelSrc,
+        modelType: 'llm',
+        onProgress: (p) => {
+          if (p.percent % 10 === 0) this.logger.info(`Model load: ${p.percent}%`);
+        },
+      });
+      this.logger.info(`QVAC model loaded and ready: ${this.modelId}`);
+      return this.modelId;
+    })();
+
+    try {
+      await this._loading;
+    } finally {
+      this._loading = null;
+    }
+    return this.modelId;
   }
 
   async generate(prompt, options = {}) {
@@ -39,40 +70,26 @@ export class LocalLLM {
 
   async _generateQVAC(prompt, title) {
     this.logger.info(`Generating via QVAC SDK: ${title}`);
-    const { loadModel, completion, unloadModel, LLAMA_3_2_1B_INST_Q4_0 } = this.qvac;
+    const { completion } = this.qvac;
+    const modelId = await this._ensureModelLoaded();
 
-    const modelSrc = this.config.qvacModelConst || LLAMA_3_2_1B_INST_Q4_0;
-    let modelId = null;
+    const history = [
+      {
+        role: 'system',
+        content: (
+          'You are a wiki writer. Write high-quality markdown content. ' +
+          'Use headings, lists, bold/italic, code blocks, tables, and wiki links [[PageName]] where relevant. ' +
+          'Use #tags for categorization. Be concise but thorough. ' +
+          'Output ONLY the markdown body content — no explanations, no wrap-up sentences.'
+        )
+      },
+      { role: 'user', content: `Write a wiki page about: ${prompt}` }
+    ];
 
-    try {
-      modelId = await loadModel({
-        modelSrc,
-        modelType: 'llm',
-        onProgress: (p) => this.logger.debug(`Loading model: ${p.percent}%`),
-      });
+    const result = completion({ modelId, history, stream: false });
+    const body = await result.text;
 
-      const history = [
-        {
-          role: 'system',
-          content: (
-            'You are a wiki writer. Write high-quality markdown content. ' +
-            'Use headings, lists, bold/italic, code blocks, tables, and wiki links [[PageName]] where relevant. ' +
-            'Use #tags for categorization. Be concise but thorough. ' +
-            'Output ONLY the markdown body content — no explanations, no wrap-up sentences.'
-          )
-        },
-        { role: 'user', content: `Write a wiki page about: ${prompt}` }
-      ];
-
-      const result = completion({ modelId, history, stream: false });
-      const body = await result.text;
-
-      return { title, body: (body || '').trim(), source: 'qvac', model: this.config.model };
-    } finally {
-      if (modelId) {
-        try { await unloadModel({ modelId }); } catch (e) { /* ignore */ }
-      }
-    }
+    return { title, body: (body || '').trim(), source: 'qvac', model: this.config.model };
   }
 
   _generateDemo(prompt, title) {
