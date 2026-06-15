@@ -65,8 +65,7 @@ export default function AIWriter() {
 
   const statusBadge = () => {
     if (!status) return <span style={styles.badgeGray}>Checking...</span>;
-    if (status.ollamaAvailable) return <span style={styles.badgeGreen}>Ollama ({status.model})</span>;
-    if (status.fallbackConfigured) return <span style={styles.badgeBlue}>API Fallback</span>;
+    if (status.qvacAvailable) return <span style={styles.badgeGreen}>QVAC ({status.model})</span>;
     return <span style={styles.badgeOrange}>Demo Mode</span>;
   };
 
