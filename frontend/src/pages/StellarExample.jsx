@@ -693,12 +693,13 @@ function VerificationStep({ label, status }) {
     pending: { icon: Activity, color: 'text-yellow-400', label: 'Pending', animate: true },
     failed: { icon: X, color: 'text-red-400', label: 'Failed' },
   }
-  const cfg = statusConfig[status]
+  const cfg = statusConfig[status] || statusConfig.pending
+  const Icon = cfg.icon
   return (
     <div className="flex items-center justify-between">
       <span className="text-gray-300">{label}</span>
       <div className="flex items-center gap-2">
-        <cfg.icon className={`w-4 h-4 ${cfg.color} ${cfg.animate ? 'animate-pulse' : ''}`} />
+        <Icon className={`w-4 h-4 ${cfg.color} ${cfg.animate ? 'animate-pulse' : ''}`} />
         <span className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
       </div>
     </div>

@@ -1,26 +1,44 @@
-import { useState } from 'react'
-import { 
-  Zap, 
-  Cpu, 
-  Network, 
-  Database, 
-  Moon, 
-  Sun, 
-  Star, 
-  ArrowRight, 
-  CheckCircle, 
+import { useState, useEffect } from 'react'
+import {
+  Zap,
+  Cpu,
+  Network,
+  Database,
+  Moon,
+  Sun,
+  Star,
+  ArrowRight,
+  CheckCircle,
   Shield,
   Globe,
   Server,
   Activity,
   Clock,
   Award,
-  Camera
+  Camera,
+  Download
 } from 'lucide-react'
 import StellarExample from './StellarExample'
 
 export default function Landing({ onNavigateToDashboard }) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [installPrompt, setInstallPrompt] = useState(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setInstallPrompt(null)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
@@ -37,8 +55,17 @@ export default function Landing({ onNavigateToDashboard }) {
                 <p className="text-sm text-dark-400">Distributed AI Inference & Mining</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <button 
+            <div className="flex items-center gap-3">
+              {installPrompt && (
+                <button
+                  onClick={handleInstall}
+                  className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Install App</span>
+                </button>
+              )}
+              <button
                 onClick={() => onNavigateToDashboard && onNavigateToDashboard()}
                 className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
               >
