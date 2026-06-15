@@ -9,6 +9,7 @@ import P2PNetwork from './components/P2PNetwork'
 import StellarIntegration from './components/StellarIntegration'
 import Landing from './pages/Landing'
 import StellarExample from './pages/StellarExample'
+import MobileMinerConsole from './components/MobileMinerConsole'
 
 // Simple error boundary
 class ErrorBoundary extends React.Component {
@@ -77,12 +78,24 @@ function App() {
     return () => clearInterval(interval)
   }, [])
 
+  // Show mobile miner console
+  if (currentView === 'miner') {
+    return (
+      <ErrorBoundary>
+        <MobileMinerConsole />
+      </ErrorBoundary>
+    )
+  }
+
   // Show landing page with Stellar Example inline
   if (currentView === 'landing') {
     console.log('[App] Rendering Landing')
     return (
       <ErrorBoundary>
-        <Landing onNavigateToDashboard={() => setCurrentView('dashboard')} />
+        <Landing
+          onNavigateToDashboard={() => setCurrentView('dashboard')}
+          onNavigateToMiner={() => setCurrentView('miner')}
+        />
       </ErrorBoundary>
     )
   }

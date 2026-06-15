@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import StellarExample from './StellarExample'
 
-export default function Landing({ onNavigateToDashboard }) {
+export default function Landing({ onNavigateToDashboard, onNavigateToMiner }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [installPrompt, setInstallPrompt] = useState(null)
 
@@ -71,6 +71,12 @@ export default function Landing({ onNavigateToDashboard }) {
               >
                 View Dashboard
               </button>
+              <button
+                onClick={() => onNavigateToMiner && onNavigateToMiner()}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors hidden sm:block"
+              >
+                Launch Miner
+              </button>
             </div>
           </div>
         </div>
@@ -87,14 +93,21 @@ export default function Landing({ onNavigateToDashboard }) {
             Hypercore for data storage, and multi-miner support with parallel monitoring.
           </p>
           <div className="flex items-center justify-center gap-4">
-            <button 
+            <button
               onClick={() => onNavigateToDashboard && onNavigateToDashboard()}
               className="px-8 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
             >
               Launch Dashboard
               <ArrowRight className="w-4 h-4" />
             </button>
-            <button 
+            <button
+              onClick={() => onNavigateToMiner && onNavigateToMiner()}
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+            >
+              Launch Miner
+              <Zap className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setActiveTab('features')}
               className="px-8 py-3 bg-dark-700 hover:bg-dark-600 text-white rounded-lg font-medium transition-colors"
             >

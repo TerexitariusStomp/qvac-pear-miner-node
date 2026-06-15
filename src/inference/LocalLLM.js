@@ -65,12 +65,9 @@ export class LocalLLM {
       ];
 
       const result = completion({ modelId, history, stream: false });
-      let body = '';
-      for await (const token of result.tokenStream) {
-        body += token;
-      }
+      const body = await result.text;
 
-      return { title, body: body.trim(), source: 'qvac', model: this.config.model };
+      return { title, body: (body || '').trim(), source: 'qvac', model: this.config.model };
     } finally {
       if (modelId) {
         try { await unloadModel({ modelId }); } catch (e) { /* ignore */ }
