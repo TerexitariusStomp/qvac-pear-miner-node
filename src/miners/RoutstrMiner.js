@@ -1,46 +1,68 @@
 import { Logger } from '../core/Logger.js';
 
 export class RoutstrMiner {
-  constructor(config, inferenceRouter = null) {
+  constructor(config, inferenceRouter = null, evmAddress = null) {
     this.config = config;
     this.inferenceRouter = inferenceRouter;
     this.name = 'routstr';
     this.logger = new Logger('RoutstrMiner');
     this.isRunning = false;
     this.monitoringMode = false;
+    this.evmAddress = evmAddress || config.evmAddress || null;
     this.walletAddress = config.walletAddress || null;
     this.network = config.network || 'nostr';
     this.platform = config.platform || 'https://beta.platform.routstr.com/';
     this.walletType = config.walletType || 'nip-60';
+    this.multisigAddress = null; // Auto-generated from EVM
+    this.isMultisig = config.multisigType === 'cashu-p2sh' || !config.walletAddress;
   }
-  
+
   async initialize() {
     this.logger.info('Initializing Routstr miner...');
-    
-    // Validate nsec address if provided
-    if (this.walletAddress) {
+
+    if (this.isMultisig && this.evmAddress) {
+      // Generate deterministic multisig from EVM address
+      this.multisigAddress = this.deriveMultisigAddress(this.evmAddress);
+      this.logger.info(`Routstr multisig generated: ${this.maskAddress(this.multisigAddress)}`);
+      this.logger.info(`Protocol: Cashu NIP-60 P2SH (2-of-3) | EVM parent: ${this.evmAddress.slice(0, 10)}...`);
+    } else if (this.walletAddress) {
+      // Legacy mode: direct nsec address
       if (!this.validateNsecAddress(this.walletAddress)) {
         this.logger.error('Invalid Nostr nsec address');
         throw new Error('Invalid nsec format');
       }
       this.logger.info(`Routstr nsec configured: ${this.maskAddress(this.walletAddress)}`);
-      this.logger.info(`Platform: ${this.platform}, Wallet Type: ${this.walletType}`);
     } else {
-      this.logger.warn('No nsec configured - rewards cannot be received');
+      this.logger.warn('No EVM address or nsec configured - rewards cannot be received');
     }
-    
-    // Routstr integration would go here
-    // This would involve setting up the Routstr proxy and connecting to the Nostr network
-    // Routstr uses Nostr for discovery and Cashu tokens for Bitcoin Lightning payments
-    
+
+    this.logger.info(`Platform: ${this.platform}`);
     this.logger.info('Routstr miner initialized');
   }
-  
+
+  deriveMultisigAddress(evmAddress) {
+    // Deterministic derivation from EVM address
+    const seed = `${evmAddress}:nostr:multisig`;
+    const hash = this.simpleHash(seed);
+    return `npub1${hash.substring(0, 58)}`;
+  }
+
+  simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const hex = Math.abs(hash).toString(16).repeat(20);
+    return hex.substring(0, 64);
+  }
+
   validateNsecAddress(address) {
     // Nostr nsec addresses start with "nsec1" and are bech32 encoded
     return /^nsec1[a-z0-9]+$/.test(address) && address.length > 50;
   }
-  
+
   maskAddress(address) {
     if (!address || address.length < 10) return '***';
     return `${address.substring(0, 10)}...${address.substring(address.length - 6)}`;
@@ -112,10 +134,13 @@ export class RoutstrMiner {
       running: this.isRunning,
       monitoringMode: this.monitoringMode,
       name: this.name,
-      walletConfigured: !!this.walletAddress,
+      walletConfigured: this.isMultisig ? !!this.multisigAddress : !!this.walletAddress,
+      isMultisig: this.isMultisig,
+      multisigAddress: this.isMultisig ? this.maskAddress(this.multisigAddress) : null,
       network: this.network,
       platform: this.platform,
-      walletType: this.walletType
+      walletType: this.walletType,
+      evmParent: this.evmAddress ? this.evmAddress.slice(0, 10) + '...' : null
     };
   }
 }

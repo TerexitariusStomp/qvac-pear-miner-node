@@ -17,42 +17,46 @@ export class MinerManager {
     this.isRunning = false;
     this.switchInterval = null;
     this.parallelMode = config.parallelMode || false;
+    this.evmAddress = config.multisig?.evmAddress || config.evmAddress || null;
   }
-  
+
   async initialize() {
     this.logger.info('Initializing miner manager...');
-    
+    if (this.evmAddress) {
+      this.logger.info(`EVM address configured: ${this.evmAddress.slice(0, 10)}...`);
+    }
+
     // Initialize miners based on config
     if (this.config.cortensor.enabled) {
       const miner = new CortensorMiner(this.config.cortensor.config, this.inferenceRouter);
       await miner.initialize();
       this.miners.set('cortensor', miner);
     }
-    
+
     if (this.config.chutes.enabled) {
-      const miner = new ChutesMiner(this.config.chutes.config, this.inferenceRouter);
+      const miner = new ChutesMiner(this.config.chutes.config, this.inferenceRouter, this.evmAddress);
       await miner.initialize();
       this.miners.set('chutes', miner);
     }
-    
+
     if (this.config.fortytwo.enabled) {
       const miner = new FortytwoMiner(this.config.fortytwo.config, this.inferenceRouter);
       await miner.initialize();
       this.miners.set('fortytwo', miner);
     }
-    
+
     if (this.config.earnidle.enabled) {
       const miner = new EarnidleMiner(this.config.earnidle.config, this.inferenceRouter);
       await miner.initialize();
       this.miners.set('earnidle', miner);
     }
-    
+
     if (this.config.routstr.enabled) {
-      const miner = new RoutstrMiner(this.config.routstr.config, this.inferenceRouter);
+      const miner = new RoutstrMiner(this.config.routstr.config, this.inferenceRouter, this.evmAddress);
       await miner.initialize();
       this.miners.set('routstr', miner);
     }
-    
+
     this.logger.info(`Initialized ${this.miners.size} miners`);
     this.logger.info('Miner manager initialized');
   }

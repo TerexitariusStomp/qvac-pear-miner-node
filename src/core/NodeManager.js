@@ -9,6 +9,7 @@ import { TimeScheduler } from '../scheduler/TimeScheduler.js';
 import { TaskMonitor } from '../scheduler/TaskMonitor.js';
 import { WebServer } from '../web/server.js';
 import { WalletManager } from './WalletManager.js';
+import { MultisigManager } from './MultisigManager.js';
 
 export class NodeManager {
   constructor(config) {
@@ -24,24 +25,33 @@ export class NodeManager {
     this.taskMonitor = null;
     this.webServer = null;
     this.walletManager = null;
+    this.multisigManager = null;
     this.isRunning = false;
   }
-  
+
   async initialize() {
     this.logger.info('Initializing node components...');
-    
+
     // Initialize authentication
     this.authService = new AuthService(this.config.auth);
     await this.authService.initialize();
-    
+
     // Initialize data store (Hypercore)
     this.dataStore = new HypercoreStore(this.config.p2p.hypercore);
     await this.dataStore.initialize();
-    
+
     // Initialize P2P network (Pear)
     this.p2pNetwork = new PearP2P(this.config.p2p.pear);
     await this.p2pNetwork.initialize();
-    
+
+    // Initialize multisig manager (generates Nostr/Bittensor multisigs from EVM)
+    if (this.config.multisig?.enabled) {
+      this.multisigManager = new MultisigManager(this.config.multisig);
+      await this.multisigManager.initialize();
+      const msStatus = this.multisigManager.getStatus();
+      this.logger.info(`Multisig system active: ${Object.keys(msStatus.multisigs).length} multisigs`);
+    }
+
     // Initialize wallet manager
     this.walletManager = new WalletManager(this.config.miners);
     await this.walletManager.initialize();
@@ -160,7 +170,8 @@ export class NodeManager {
       mining: this.minerManager?.getStatus(),
       tasks: this.taskMonitor?.getStatus(),
       p2p: this.p2pNetwork?.getStatus(),
-      wallets: this.walletManager?.getStatus()
+      wallets: this.walletManager?.getStatus(),
+      multisig: this.multisigManager?.getStatus()
     };
   }
 }

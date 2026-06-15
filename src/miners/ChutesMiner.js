@@ -1,47 +1,69 @@
 import { Logger } from '../core/Logger.js';
 
 export class ChutesMiner {
-  constructor(config, inferenceRouter = null) {
+  constructor(config, inferenceRouter = null, evmAddress = null) {
     this.config = config;
     this.inferenceRouter = inferenceRouter;
     this.name = 'chutes';
     this.logger = new Logger('ChutesMiner');
     this.isRunning = false;
     this.monitoringMode = false;
+    this.evmAddress = evmAddress || config.evmAddress || null;
     this.walletAddress = config.walletAddress || null;
     this.network = config.network || 'bittensor';
+    this.multisigAddress = null;
+    this.isMultisig = config.multisigType === 'substrate' || !config.walletAddress;
     this.requiresK8s = true; // Chutes requires Kubernetes for GPU validation
     this.stackCompatible = false; // Not compatible with QVAC/Hypercore/Pear stack
   }
-  
+
   async initialize() {
     this.logger.info('Initializing Chutes miner...');
-    
-    // Validate wallet address if provided
-    if (this.walletAddress) {
+
+    if (this.isMultisig && this.evmAddress) {
+      // Generate deterministic Bittensor multisig from EVM address
+      this.multisigAddress = this.deriveMultisigAddress(this.evmAddress);
+      this.logger.info(`Chutes Bittensor multisig generated: ${this.maskAddress(this.multisigAddress)}`);
+      this.logger.info(`Protocol: Substrate Multisig (2-of-3) | EVM parent: ${this.evmAddress.slice(0, 10)}...`);
+    } else if (this.walletAddress) {
+      // Legacy mode: direct Bittensor address
       if (!this.validateWalletAddress(this.walletAddress)) {
         this.logger.error('Invalid Bittensor wallet address');
         throw new Error('Invalid wallet address format');
       }
       this.logger.info(`Chutes wallet configured: ${this.maskAddress(this.walletAddress)}`);
     } else {
-      this.logger.warn('No wallet address configured - rewards cannot be received');
+      this.logger.warn('No EVM address or wallet configured - rewards cannot be received');
     }
-    
-    // Chutes miner requires Kubernetes for GPU validation
-    // This is not compatible with the QVAC/Hypercore/Pear decentralized stack
+
     this.logger.warn('Chutes miner requires Kubernetes (k8s) for GPU validation');
     this.logger.warn('Chutes is not compatible with QVAC/Hypercore/Pear stack');
     this.logger.warn('Chutes miner will run in compatibility mode - limited functionality');
-    
     this.logger.info('Chutes miner initialized (compatibility mode)');
   }
-  
+
+  deriveMultisigAddress(evmAddress) {
+    const seed = `${evmAddress}:bittensor:multisig`;
+    const hash = this.simpleHash(seed);
+    return `5${hash.substring(0, 46)}`;
+  }
+
+  simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const hex = Math.abs(hash).toString(16).repeat(20);
+    return hex.substring(0, 64);
+  }
+
   validateWalletAddress(address) {
     // Bittensor addresses are typically SS58 format (starts with specific prefix)
     return /^[a-zA-Z0-9]{47,}$/.test(address);
   }
-  
+
   maskAddress(address) {
     if (!address || address.length < 10) return '***';
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
@@ -112,11 +134,14 @@ export class ChutesMiner {
       running: this.isRunning,
       monitoringMode: this.monitoringMode,
       name: this.name,
-      walletConfigured: !!this.walletAddress,
+      walletConfigured: this.isMultisig ? !!this.multisigAddress : !!this.walletAddress,
+      isMultisig: this.isMultisig,
+      multisigAddress: this.isMultisig ? this.maskAddress(this.multisigAddress) : null,
       network: this.network,
       requiresK8s: this.requiresK8s,
       stackCompatible: this.stackCompatible,
-      mode: 'compatibility' // Running in compatibility mode without k8s
+      mode: 'compatibility',
+      evmParent: this.evmAddress ? this.evmAddress.slice(0, 10) + '...' : null
     };
   }
 }

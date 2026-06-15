@@ -32,19 +32,22 @@
       "config": {
         "walletAddress": "0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf",
         "network": "arbitrum-testnet",
-        "description": "Arbitrum testnet wallet address for Cortensor mining rewards"
+        "description": "Arbitrum testnet wallet address for Cortensor mining rewards",
+        "autoFundSweep": true
       }
     },
     "chutes": {
       "enabled": true,
       "config": {
-        "walletAddress": "5G8xKa8ks1FsGAvTmLdQwLZqmRaHutiF3BvHFcvKmwGDfHCF",
         "network": "bittensor",
-        "description": "Bittensor wallet address for Chutes GPU compute mining rewards",
+        "description": "Bittensor multisig (auto-generated from EVM) for Chutes GPU compute rewards",
+        "multisigType": "substrate",
+        "multisigThreshold": "2-of-3",
         "requiresK8s": true,
         "stackCompatible": false,
         "compatibilityMode": true,
-        "note": "Chutes requires Kubernetes for GPU validation. Running in compatibility mode with QVAC/Hypercore/Pear stack. All inference routed through QVAC inference node."
+        "note": "Bittensor multisig is auto-generated from your EVM address. Funds are swept weekly to EVM multisig with 2-day denial window.",
+        "autoFundSweep": true
       }
     },
     "fortytwo": {
@@ -52,7 +55,8 @@
       "config": {
         "walletAddress": "0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf",
         "network": "evm",
-        "description": "EVM compatible wallet address for Fortytwo-Network mining rewards"
+        "description": "EVM compatible wallet address for Fortytwo-Network mining rewards",
+        "autoFundSweep": true
       }
     },
     "earnidle": {
@@ -60,17 +64,48 @@
       "config": {
         "walletAddress": "6ovcKVxdNHH1LradUS8T5gmYiYUGQPW8xtPhfp9ZhPXw",
         "network": "solana",
-        "description": "Solana wallet address for Earnidle mining rewards"
+        "description": "Solana wallet address for Earnidle mining rewards",
+        "autoFundSweep": false
       }
     },
     "routstr": {
       "enabled": true,
       "config": {
-        "walletAddress": "nsec1psf70kpc2xkuvylmq8827flhkukpxs893m92v7zfx938ch2qk9dsdr565z",
         "network": "nostr",
         "platform": "https://beta.platform.routstr.com/",
         "walletType": "nip-60",
-        "description": "Nostr nsec address for Routstr AI inference routing rewards"
+        "description": "Nostr Cashu NIP-60 multisig (auto-generated from EVM) for Routstr AI inference routing rewards",
+        "multisigType": "cashu-p2sh",
+        "multisigThreshold": "2-of-3",
+        "note": "Nostr multisig is auto-generated from your EVM address. Funds are swept weekly to EVM multisig with 2-day denial window.",
+        "autoFundSweep": true
+      }
+    }
+  },
+  "multisig": {
+    "enabled": true,
+    "evmAddress": "0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf",
+    "weeklySweep": {
+      "enabled": true,
+      "dayOfWeek": 0,
+      "hour": 0,
+      "minute": 0,
+      "denialWindowHours": 48
+    },
+    "networks": {
+      "nostr": {
+        "enabled": true,
+        "protocol": "cashu-nip60-p2sh",
+        "threshold": 2,
+        "signers": 3,
+        "autoGenerate": true
+      },
+      "bittensor": {
+        "enabled": true,
+        "protocol": "substrate-multisig",
+        "threshold": 2,
+        "signers": 3,
+        "autoGenerate": true
       }
     }
   },

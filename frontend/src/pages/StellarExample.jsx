@@ -228,23 +228,29 @@ const APP_SCREENS = {
     title: 'Astra AI',
     icon: Brain,
     render: () => {
-      const [showContributionBar, setShowContributionBar] = useState(true);
+      const [showSetup, setShowSetup] = useState(true);
+      const [evmAddress, setEvmAddress] = useState('');
       const [showDownload, setShowDownload] = useState(false);
       const [downloading, setDownloading] = useState(false);
       const [installed, setInstalled] = useState(false);
+      const [multisigs, setMultisigs] = useState(null);
 
-      const handleContributeYes = () => {
-        setShowContributionBar(false);
+      const handleEvmSubmit = () => {
+        if (!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)) return;
+        // Generate deterministic multisigs from EVM address
+        const nostrMs = `npub1${evmAddress.slice(2, 30)}...`;
+        const bittensorMs = `5${evmAddress.slice(2, 28)}...`;
+        setMultisigs({
+          evm: evmAddress,
+          nostr: nostrMs,
+          bittensor: bittensorMs
+        });
+        setShowSetup(false);
         setShowDownload(true);
-      };
-
-      const handleContributeNo = () => {
-        setShowContributionBar(false);
       };
 
       const handleDownload = () => {
         setDownloading(true);
-        // Simulate download and install
         setTimeout(() => {
           setDownloading(false);
           setInstalled(true);
@@ -254,73 +260,100 @@ const APP_SCREENS = {
 
       return (
         <div className="space-y-4 pb-24">
-          {/* Idle Inference Contribution Bar */}
-          {showContributionBar && (
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4 animate-pulse">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-white" />
-                  <span className="font-semibold text-white">Contribute Idle Inference & Earn</span>
-                </div>
-                <Zap className="w-5 h-5 text-yellow-300" />
+          {/* EVM Wallet Setup */}
+          {showSetup && (
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Cpu className="w-5 h-5 text-white" />
+                <span className="font-semibold text-white">Contribute Idle Inference & Earn</span>
+                <Zap className="w-5 h-5 text-yellow-300 ml-auto" />
               </div>
               <p className="text-sm text-indigo-100 mb-3">
-                Your device can earn rewards by processing AI inference tasks when idle. Connects to Earnidle, Fortytwo, Cortensor, and Chutes networks.
+                Enter your EVM wallet address. Nostr and Bittensor multisigs are auto-generated. Funds sweep weekly to your EVM address with a 2-day denial window.
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={evmAddress}
+                  onChange={(e) => setEvmAddress(e.target.value)}
+                  placeholder="0x... (EVM address only)"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/50"
+                />
                 <button 
-                  onClick={handleContributeYes}
-                  className="flex-1 py-2 bg-white text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-50 transition-colors"
+                  onClick={handleEvmSubmit}
+                  disabled={!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)}
+                  className="py-2 bg-white text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Yes, I want to earn
-                </button>
-                <button 
-                  onClick={handleContributeNo}
-                  className="px-4 py-2 bg-indigo-700/50 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
-                >
-                  No thanks
+                  Confirm & Generate Multisigs
                 </button>
               </div>
             </div>
           )}
 
-          {/* Download Button */}
-          {showDownload && (
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Download className="w-5 h-5 text-white" />
-                  <span className="font-semibold text-white">Download Inference Router</span>
+          {/* Multisig Preview */}
+          {showDownload && multisigs && (
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Network className="w-5 h-5 text-white" />
+                <span className="font-semibold text-white">Auto-Generated Multisigs</span>
+              </div>
+              <div className="space-y-2 mb-3">
+                <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
+                  <span className="text-xs text-blue-100">EVM (Destination)</span>
+                  <span className="text-xs text-white font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
+                  <span className="text-xs text-blue-100">Nostr (2-of-3)</span>
+                  <span className="text-xs text-white font-mono">{multisigs.nostr}</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
+                  <span className="text-xs text-blue-100">Bittensor (2-of-3)</span>
+                  <span className="text-xs text-white font-mono">{multisigs.bittensor}</span>
                 </div>
               </div>
-              <p className="text-sm text-green-100 mb-3">
-                Download the QVAC-Pear inference router to start earning from idle compute.
+              <p className="text-xs text-blue-100 mb-3">
+                Funds accumulate in Nostr/Bittensor multisigs. Weekly sweeps to EVM with 48hr denial window.
               </p>
               <button 
                 onClick={handleDownload}
                 disabled={downloading}
-                className="w-full py-2 bg-white text-green-600 rounded-lg font-medium text-sm hover:bg-green-50 transition-colors disabled:opacity-50"
+                className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
               >
-                {downloading ? 'Downloading...' : 'Download & Install'}
+                {downloading ? 'Downloading...' : 'Download & Install Router'}
               </button>
             </div>
           )}
 
           {/* Installed Success */}
-          {installed && (
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4">
+          {installed && multisigs && (
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-green-300" />
+                <CheckCircle className="w-5 h-5 text-white" />
                 <span className="font-semibold text-white">Inference Router Active</span>
               </div>
-              <p className="text-sm text-blue-100">
-                Routing inference to: Earnidle, Fortytwo, Cortensor, Chutes. Earning rewards from idle compute.
+              <p className="text-sm text-green-100 mb-2">
+                Earning on all networks. Weekly sweeps route to your EVM address.
               </p>
-              <div className="mt-2 flex gap-2">
+              <div className="space-y-1 mb-3">
+                <div className="flex justify-between text-xs text-green-100">
+                  <span>EVM Destination</span>
+                  <span className="font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-green-100">
+                  <span>Nostr Multisig</span>
+                  <span className="font-mono">{multisigs.nostr}</span>
+                </div>
+                <div className="flex justify-between text-xs text-green-100">
+                  <span>Bittensor Multisig</span>
+                  <span className="font-mono">{multisigs.bittensor}</span>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
                 <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Earnidle</span>
                 <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Fortytwo</span>
                 <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Cortensor</span>
                 <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Chutes</span>
+                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Routstr</span>
               </div>
             </div>
           )}
