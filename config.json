@@ -85,16 +85,26 @@
   "multisig": {
     "enabled": true,
     "machineOwnerAddress": "0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf",
+    "evmMultisigAddress": "0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf",
     "revenueSplit": {
       "machineOwner": 0.70,
       "appDeveloper": 0.30
+    },
+    "weeklySweep": {
+      "enabled": true,
+      "dayOfWeek": 0,
+      "hour": 0,
+      "minute": 0,
+      "denialWindowHours": 48,
+      "description": "Collects all network funds into EVM collection multisig"
     },
     "monthlySweep": {
       "enabled": true,
       "dayOfMonth": 1,
       "hour": 0,
       "minute": 0,
-      "denialWindowHours": 48
+      "denialWindowHours": 48,
+      "description": "Distributes from EVM collection multisig: 70% machine owner, 30% app developer"
     },
     "protocolMultisigs": {
       "nostr": {

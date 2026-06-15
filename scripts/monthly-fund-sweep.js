@@ -3,8 +3,9 @@
 /**
  * Monthly Fund Sweep Script
  *
- * Runs monthly to move funds from protocol multisigs.
- * Funds are split between machine owner and app developer.
+ * Distributes funds from the EVM collection multisig.
+ * Step 2 of the two-sweep architecture: weekly collects to EVM, monthly distributes.
+ * Funds are split 70% machine owner / 30% app developer.
  * Includes a 2-day denial window.
  *
  * Usage:
@@ -68,6 +69,7 @@ async function main() {
   for (const [network, ms] of Object.entries(status.protocolMultisigs)) {
     logger.info(`  ${network}: ${ms.address} (${ms.threshold}-of-3)`);
   }
+  logger.info(`EVM Collection: ${status.evmCollectionMultisig || 'not configured'}`);
   logger.info(`Revenue Split: ${(status.revenueSplit.machineOwner * 100).toFixed(0)}% machine owner / ${(status.revenueSplit.appDeveloper * 100).toFixed(0)}% app developer`);
 
   if (isDryRun) {
@@ -76,30 +78,32 @@ async function main() {
     logger.info('');
   }
 
-  // Collect balances from each protocol multisig
-  const networks = ['nostr', 'bittensor'];
-  const balances = await collectBalances(networks, multisigManager, isDryRun);
+  // Query EVM collection multisig balance
+  const evmBalance = await queryEVMBalance(multisigManager, isDryRun);
 
-  // Initiate monthly sweeps
-  logger.info('');
-  logger.info('Initiating monthly sweeps (2-day denial window active)...');
-  logger.info('');
-
-  for (const [network, balance] of Object.entries(balances)) {
-    if (balance > 0) {
-      await initiateSweep(network, balance, msConfig, multisigManager, isDryRun);
-    }
+  if (evmBalance <= 0) {
+    logger.info('No funds in EVM collection multisig to distribute this month.');
+    logger.info('========================================');
+    process.exit(0);
   }
+
+  logger.info('');
+  logger.info(`EVM collection balance: ${evmBalance}`);
+  logger.info('');
+  logger.info('Initiating monthly distribution from EVM multisig (2-day denial window)...');
+  logger.info('');
+
+  await initiateDistributionSweep(evmBalance, msConfig, multisigManager, isDryRun);
 
   // Display pending sweeps
   const pendingSweeps = multisigManager.getPendingSweeps();
   if (pendingSweeps.length > 0) {
     logger.info('');
-    logger.info('Pending Sweeps (2-day denial window):');
+    logger.info('Pending Distribution Sweeps:');
     for (const sweep of pendingSweeps) {
       const scheduledDate = new Date(sweep.scheduledAt);
       logger.info(`  ${sweep.id}:`);
-      logger.info(`    Network: ${sweep.network}`);
+      logger.info(`    Source: EVM collection multisig`);
       logger.info(`    Total: ${sweep.amount}`);
       logger.info(`    Machine Owner (${sweep.machineOwner}): ${sweep.machineOwnerShare}`);
       logger.info(`    App Developer (${sweep.appId}): ${sweep.appDeveloperShare}`);
@@ -109,63 +113,46 @@ async function main() {
   }
 
   logger.info('');
-  logger.info('Monthly Fund Sweep Complete');
+  logger.info('Monthly Distribution Sweep Complete');
   logger.info('========================================');
 }
 
 /**
- * Collect balances from protocol multisigs
+ * Query EVM collection multisig balance
  */
-async function collectBalances(networks, multisigManager, isDryRun) {
-  const balances = {};
-
-  for (const network of networks) {
-    const multisig = multisigManager.getMultisig(network);
-    if (!multisig) {
-      logger.warn(`No protocol multisig found for ${network}`);
-      continue;
-    }
-
-    const simulatedBalance = isDryRun ? 0.001 : await queryBalance(network, multisig.address);
-    balances[network] = simulatedBalance;
-
-    if (simulatedBalance > 0) {
-      logger.info(`${network}: Balance detected (${simulatedBalance})`);
-    } else {
-      logger.info(`${network}: No balance to sweep`);
-    }
+async function queryEVMBalance(multisigManager, isDryRun) {
+  const evmMultisig = multisigManager.getMultisig('evm');
+  if (!evmMultisig) {
+    logger.warn('No EVM collection multisig found');
+    return 0;
   }
 
-  return balances;
-}
-
-/**
- * Query balance from network (simulated)
- */
-async function queryBalance(network, address) {
+  // In production, query the EVM chain for balance
+  // For now, simulate
   await new Promise(resolve => setTimeout(resolve, 500));
-  const randomBalance = Math.random() > 0.5 ? parseFloat((Math.random() * 0.01).toFixed(6)) : 0;
-  return randomBalance;
+  const simulatedBalance = isDryRun ? 0.01 : parseFloat((Math.random() * 0.05).toFixed(6));
+  return simulatedBalance;
 }
 
 /**
- * Initiate a sweep from protocol multisig with revenue split
+ * Initiate a distribution sweep from EVM multisig (70/30 split)
  */
-async function initiateSweep(network, amount, msConfig, multisigManager, isDryRun) {
+async function initiateDistributionSweep(amount, msConfig, multisigManager, isDryRun) {
   if (isDryRun) {
-    logger.info(`[DRY RUN] Would sweep ${amount} from ${network} (protocol multisig)`);
+    logger.info(`[DRY RUN] Would distribute ${amount} from EVM collection multisig`);
     return;
   }
 
   try {
     const machineOwner = msConfig.machineOwnerAddress || 'unknown';
     const appId = 'protocol-default';
-    const sweepId = await multisigManager.initiateSweep(network, amount, machineOwner, appId);
-    logger.info(`Sweep initiated: ${sweepId}`);
-    logger.info(`  Amount: ${amount} ${getNetworkToken(network)}`);
+    const sweepId = await multisigManager.initiateDistributionSweep(amount, machineOwner, appId);
+    logger.info(`Distribution sweep initiated: ${sweepId}`);
+    logger.info(`  Amount: ${amount}`);
+    logger.info(`  Machine owner: ${machineOwner}`);
     logger.info(`  Deny window: 2 days`);
   } catch (error) {
-    logger.error(`Failed to initiate sweep for ${network}: ${error.message}`);
+    logger.error(`Failed to initiate distribution sweep: ${error.message}`);
   }
 }
 

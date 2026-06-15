@@ -65,7 +65,8 @@ function AIScreen() {
 
   const handleDownload = () => {
     setDownloading(true);
-    // Generate actual docker-compose.yml file for download
+
+    // 1. docker-compose.yml for desktop Docker
     const dockerCompose = `version: '3.8'
 services:
   qvac-pear-miner:
@@ -80,21 +81,35 @@ services:
       - ./data:/app/data
     restart: unless-stopped
 `;
-    const blob = new Blob([dockerCompose], { type: 'text/yaml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'docker-compose.yml';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(dockerCompose, 'docker-compose.yml', 'text/yaml');
+
+    // 2. start.sh for desktop native (npm)
+    const startScript = `#!/bin/bash
+# QVAC-Pear Miner Node - Quick Start
+echo "Starting QVAC-Pear Miner Node..."
+npm install
+MACHINE_OWNER_EVM=${evmAddress} APP_ID=your-app-id npm start
+echo "Node running at http://localhost:3000"
+`;
+    downloadFile(startScript, 'start.sh', 'text/x-shellscript');
 
     setTimeout(() => {
       setDownloading(false);
       setInstalled(true);
       setShowDownload(false);
     }, 1500);
+  };
+
+  const downloadFile = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -159,14 +174,16 @@ services:
             </div>
           </div>
           <p className="text-xs text-blue-100 mb-3">
-            Funds accumulate in protocol multisigs. Monthly sweeps with 48hr denial window. Split applied at distribution.
+            Two-sweep architecture:<br/>
+            1. Weekly: all network funds → EVM collection multisig<br/>
+            2. Monthly: EVM multisig → 70% you, 30% app developer (48hr denial window)
           </p>
           <button
             onClick={handleDownload}
             disabled={downloading}
             className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
-            {downloading ? 'Downloading...' : 'Download docker-compose.yml'}
+            {downloading ? 'Downloading...' : 'Download Starter Kit'}
           </button>
         </div>
       )}
@@ -178,7 +195,7 @@ services:
             <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Run <code className="bg-black/20 px-1 rounded">docker-compose up -d</code> to start earning. Monthly payouts to your EVM address.
+            Desktop: run <code className="bg-black/20 px-1 rounded">docker-compose up -d</code> or <code className="bg-black/20 px-1 rounded">bash start.sh</code>. Phone: the embed script auto-installs when users opt in — no Docker needed.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">
@@ -187,7 +204,11 @@ services:
             </div>
             <div className="flex justify-between text-xs text-green-100">
               <span>Distribution</span>
-              <span className="font-mono">Monthly (70% you / 30% app)</span>
+              <span className="font-mono">Monthly from EVM multisig (70% you / 30% app)</span>
+            </div>
+            <div className="flex justify-between text-xs text-green-100">
+              <span>Collection</span>
+              <span className="font-mono">Weekly to EVM multisig</span>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -1070,11 +1091,11 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
                 <div className="flex-1">
                   <h4 className="font-medium text-white mb-1">Earn & Receive Monthly Payouts</h4>
                   <p className="text-sm text-dark-300 mb-2">
-                    Inference rewards accumulate in protocol multisigs. Monthly sweeps distribute funds: 70% to machine owner, 30% to app developer. 48-hour denial window.
+                    Two-sweep architecture: weekly collection from all networks into EVM multisig, then monthly distribution (70% machine owner, 30% app developer). 48-hour denial window on both sweeps.
                   </p>
                   <div className="flex items-center gap-2 text-xs text-indigo-300">
                     <Clock className="w-3 h-3" />
-                    <span>Deny any sweep within 48 hours: node scripts/monthly-fund-sweep.js --deny &lt;id&gt;</span>
+                    <span>Weekly collect → EVM. Monthly distribute 70/30. Deny: node scripts/monthly-fund-sweep.js --deny &lt;id&gt;</span>
                   </div>
                 </div>
               </div>
@@ -1204,10 +1225,10 @@ const status = inference.getStatus();`}</pre>
               Getting Started
             </h3>
             <div className="space-y-4">
-              <DocStep number="1" title="Run the Node (Docker)" desc="The QVAC-Pear Miner Node runs as a Docker container. Clone the repo and start with docker-compose." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
-              <DocStep number="2" title="Configure Your EVM Payout Address" desc="Set MACHINE_OWNER_EVM in your .env. This is where you receive your 70% monthly share. Protocol multisigs are shared — no generation needed." />
-              <DocStep number="3" title="Start the Node" desc="docker-compose up -d starts the inference router, all 5 miners, and the web dashboard at localhost:3000." />
-              <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address (machine owner's payout address) to your app's HTML. Users opt in and the runtime downloads automatically." />
+              <DocStep number="1" title="Run the Node (Any Platform)" desc="Desktop: Docker (docker-compose up -d) or npm (npm install && npm start). Phone: the embed script auto-installs when users opt in — no separate install needed." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
+              <DocStep number="2" title="Configure Your EVM Payout Address" desc="Set MACHINE_OWNER_EVM in your .env or config.json. This is where you receive your 70% monthly share. Protocol multisigs are shared — no generation needed." />
+              <DocStep number="3" title="Start Earning" desc="docker-compose up -d or bash start.sh starts the inference router and all 5 miners. Dashboard at localhost:3000." />
+              <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address to your app's HTML. Phone users opt in and the runtime auto-installs — no Docker required on mobile." />
             </div>
           </div>
 
@@ -1256,8 +1277,8 @@ const status = inference.getStatus();`}</pre>
               <FAQItem question="Do I need to specify AI models in my app?" answer="No. Regular apps don't specify models — the embed uses optimal local models automatically. Only dedicated mining nodes with specific hardware require explicit model configuration." />
               <FAQItem question="Is inference data sent to external servers?" answer="Inference runs locally on the user's device. Only the inference results (task outputs) are transmitted to tasker networks for validation and reward distribution. No raw user data or prompts leave the device." />
               <FAQItem question="What if the user declines?" answer="Your app continues to work normally. The user just won't earn from compute contribution. They can always opt in later through your app's settings or the dashboard." />
-              <FAQItem question="What platforms are supported?" answer="Desktop (Linux, macOS, Windows) via Docker. The inference router runs as a container. Mobile support is planned." />
-              <FAQItem question="How do the monthly payouts work?" answer="Funds from protocol multisigs (Nostr and Bittensor) are distributed monthly. 70% goes to the machine owner (the EVM address you provide), 30% to the app developer who embedded the script. You have 48 hours to deny any sweep." />
+              <FAQItem question="What platforms are supported?" answer="Desktop (Linux, macOS, Windows): Docker or npm. Phone: the embed script auto-installs the runtime when users opt in — no Docker or separate app install needed. The same embed script works everywhere." />
+              <FAQItem question="How does the two-sweep architecture work?" answer="Weekly: funds from all networks (Nostr, Bittensor, Solana, Arbitrum, EVM) are collected into the EVM collection multisig. Monthly: the EVM multisig distributes funds — 70% to machine owner, 30% to app developer. Both sweeps have a 48-hour denial window." />
               <FAQItem question="Why are multisigs shared across apps?" answer="Protocol multisigs are managed at the network level. All apps use the same Nostr and Bittensor multisig addresses. This simplifies setup — you only provide your EVM payout address, and the protocol handles distribution." />
             </div>
           </div>

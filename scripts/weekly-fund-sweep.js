@@ -2,10 +2,10 @@
 
 /**
  * Weekly Fund Sweep Script
- * 
- * Runs every week to move funds from Nostr/Bittensor multisigs to EVM multisig.
- * Includes a 2-day denial window where multisig members can cancel the sweep.
- * 
+ *
+ * Collects funds from all network protocol multisigs (Nostr, Bittensor, Solana, Arbitrum)
+ * into the EVM collection multisig. This is Step 1 of the two-sweep architecture.
+ *
  * Usage:
  *   node scripts/weekly-fund-sweep.js
  *   node scripts/weekly-fund-sweep.js --dry-run
@@ -49,8 +49,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Initialize multisig manager
-  const multisigManager = new MultisigManager({ evmAddress });
+  // Initialize multisig manager with EVM collection multisig
+  const multisigManager = new MultisigManager({
+    evmMultisigAddress: config.multisig?.evmMultisigAddress || evmAddress
+  });
   await multisigManager.initialize();
 
   // Handle denial request
@@ -68,10 +70,9 @@ async function main() {
 
   // Display current multisig status
   const status = multisigManager.getStatus();
-  logger.info('Current Multisig Status:');
-  logger.info(`  EVM Address: ${status.evmAddress}`);
-  logger.info('  Network Multisigs:');
-  for (const [network, ms] of Object.entries(status.multisigs)) {
+  logger.info('Protocol Multisig Status:');
+  logger.info(`  EVM Collection: ${status.evmCollectionMultisig || 'not configured'}`);
+  for (const [network, ms] of Object.entries(status.protocolMultisigs)) {
     logger.info(`    ${network}: ${ms.address} (${ms.threshold}-of-3)`);
   }
 
@@ -81,18 +82,18 @@ async function main() {
     logger.info('');
   }
 
-  // Collect balances from each network
-  const networks = ['nostr', 'bittensor'];
+  // Collect balances from all networks (including direct deposit chains)
+  const networks = ['nostr', 'bittensor', 'solana', 'arbitrum'];
   const balances = await collectBalances(networks, multisigManager, isDryRun);
 
-  // Initiate sweeps for each network with balance
+  // Initiate collection sweeps for each network with balance
   logger.info('');
-  logger.info('Initiating sweeps (2-day denial window active)...');
+  logger.info('Initiating collection sweeps to EVM multisig (2-day denial window)...');
   logger.info('');
 
   for (const [network, balance] of Object.entries(balances)) {
     if (balance > 0) {
-      await initiateSweep(network, balance, multisigManager, isDryRun);
+      await initiateCollectionSweep(network, balance, multisigManager, isDryRun);
     }
   }
 
@@ -100,19 +101,21 @@ async function main() {
   const pendingSweeps = multisigManager.getPendingSweeps();
   if (pendingSweeps.length > 0) {
     logger.info('');
-    logger.info('Pending Sweeps (2-day denial window):');
+    logger.info('Pending Collection Sweeps:');
     for (const sweep of pendingSweeps) {
       const scheduledDate = new Date(sweep.scheduledAt);
       logger.info(`  ${sweep.id}:`);
       logger.info(`    Network: ${sweep.network}`);
       logger.info(`    Amount: ${sweep.amount}`);
+      logger.info(`    Target: EVM collection multisig`);
       logger.info(`    Scheduled: ${scheduledDate.toISOString()}`);
       logger.info(`    Deny command: node scripts/weekly-fund-sweep.js --deny ${sweep.id}`);
     }
   }
 
   logger.info('');
-  logger.info('Weekly Fund Sweep Complete');
+  logger.info('Weekly Collection Sweep Complete');
+  logger.info('Funds will be available in EVM multisig for monthly distribution');
   logger.info('========================================');
 }
 
@@ -161,21 +164,22 @@ async function queryBalance(network, address) {
 }
 
 /**
- * Initiate a sweep from network to EVM multisig
+ * Initiate a collection sweep from network to EVM multisig
  */
-async function initiateSweep(network, amount, multisigManager, isDryRun) {
+async function initiateCollectionSweep(network, amount, multisigManager, isDryRun) {
   if (isDryRun) {
-    logger.info(`[DRY RUN] Would sweep ${amount} from ${network} to EVM`);
+    logger.info(`[DRY RUN] Would collect ${amount} from ${network} to EVM multisig`);
     return;
   }
 
   try {
-    const sweepId = await multisigManager.initiateSweep(network, amount);
-    logger.info(`Sweep initiated: ${sweepId}`);
+    const sweepId = await multisigManager.initiateCollectionSweep(network, amount);
+    logger.info(`Collection sweep initiated: ${sweepId}`);
     logger.info(`  Amount: ${amount} ${getNetworkToken(network)}`);
+    logger.info(`  Target: EVM collection multisig`);
     logger.info(`  Deny window: 2 days`);
   } catch (error) {
-    logger.error(`Failed to initiate sweep for ${network}: ${error.message}`);
+    logger.error(`Failed to initiate collection sweep for ${network}: ${error.message}`);
   }
 }
 

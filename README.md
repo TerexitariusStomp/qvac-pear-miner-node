@@ -42,19 +42,24 @@ The protocol maintains **shared multisigs** for Nostr and Bittensor. All applica
 - **EVM (Cortensor/Fortytwo)** — Direct deposit to machine owner address
 - **Solana (Earnidle)** — Direct deposit (separate wallet)
 
-### Monthly Revenue Split
+### Two-Sweep Architecture
 
-Funds accumulate in protocol multisigs. Every month, an automated script distributes earnings:
+**Step 1 — Weekly Collection** (`scripts/weekly-fund-sweep.js`)
+- Collects funds from all network protocol multisigs (Nostr, Bittensor, Solana, Arbitrum) into the EVM collection multisig
+- Runs every Sunday with 48-hour denial window
 
-1. **1st of month 00:00 UTC** — Monthly sweep initiated
-2. **48-hour denial window** — Multisig members can cancel via `node scripts/monthly-fund-sweep.js --deny <sweep-id>`
-3. **3rd of month 00:00 UTC** — If not denied, funds are distributed:
-   - **70%** → Machine owner (the EVM address provided by the user)
-   - **30%** → App developer (identified by `data-app-id`)
+**Step 2 — Monthly Distribution** (`scripts/monthly-fund-sweep.js`)
+- Distributes from EVM collection multisig to machine owner and app developer
+- Runs on the 1st of each month with 48-hour denial window
+- Split: **70%** machine owner, **30%** app developer
 
 To deny a sweep:
 ```bash
-node scripts/monthly-fund-sweep.js --deny monthly-nostr-1234567890
+# Weekly collection
+node scripts/weekly-fund-sweep.js --deny weekly-collect-nostr-1234567890
+
+# Monthly distribution
+node scripts/monthly-fund-sweep.js --deny monthly-dist-1234567890
 ```
 
 ### Docker Compose (Recommended)
@@ -68,6 +73,31 @@ docker-compose logs -f
 
 # Stop services
 docker-compose down
+```
+
+### Alternative: Native npm (All Desktop Platforms)
+
+For machines without Docker, or for development:
+
+```bash
+# Install dependencies
+npm install
+
+# Start the node
+MACHINE_OWNER_EVM=0x... APP_ID=your-app-id npm start
+```
+
+### Phone / Mobile
+
+No installation required. The embed script auto-installs the inference runtime when mobile users opt in within the host app. The script handles everything — no Docker, no separate app store download.
+
+```html
+<script
+  src="https://cdn.qvac-pear.io/inference-embed.js"
+  data-app-id="your-app-id"
+  data-evm-address="0x..."
+  auto-install>
+</script>
 ```
 
 ## Architecture
