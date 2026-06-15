@@ -419,6 +419,48 @@ export default function Landing({ onNavigateToDashboard, onNavigateToMiner }) {
         </div>
       </section>
 
+      {/* Embed Integration Section */}
+      <section className="container mx-auto px-6 py-16">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-white text-center mb-4">
+            One-Line Integration
+          </h2>
+          <p className="text-center text-dark-300 mb-8">
+            App publishers can embed distributed AI inference with a single script tag.
+          </p>
+
+          <div className="card">
+            <p className="text-sm text-dark-400 mb-3">
+              Paste this into any HTML, WebView, or Android APK layout. The script auto-detects idle compute,
+              registers with the mining coordinator using your EVM address, and begins processing inference tasks.
+            </p>
+            <div className="bg-dark-900 rounded-lg p-4 font-mono text-sm text-green-300 overflow-x-auto whitespace-pre-wrap">
+{`<script
+  src="./inference-embed.js"
+  data-app-id="your-app-id"
+  data-evm-address="0x..."
+  auto-install>
+</script>`}
+            </div>
+            <div className="flex gap-3 mt-4 flex-wrap">
+              <a
+                href="./embed-demo.html"
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+              >
+                <Zap className="w-4 h-4" /> Live Demo & Docs
+              </a>
+              <a
+                href="./inference-embed.js"
+                download
+                className="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Download Script
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Stellar Field Integration Section - INLINE ON LANDING PAGE */}
       <section className="container mx-auto px-6 py-16">
         <StellarExample onNavigateBack={() => {}} onNavigateToDashboard={onNavigateToDashboard} />
