@@ -49,7 +49,7 @@ const APP_SCREENS = {
   home: {
     title: 'Home',
     icon: Home,
-    render: () => (
+    render: (navigateToScreen) => (
       <div className="space-y-4 pb-24">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4">
@@ -61,6 +61,27 @@ const APP_SCREENS = {
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
               <Star className="w-8 h-8 text-white" />
             </div>
+          </div>
+        </div>
+
+        {/* Earning Prompt */}
+        <div 
+          onClick={() => navigateToScreen && navigateToScreen('ai')}
+          className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4 cursor-pointer hover:from-green-500 hover:to-emerald-500 transition-all"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-white" />
+              <span className="font-semibold text-white">Contribute Idle Compute & Earn</span>
+            </div>
+            <Zap className="w-5 h-5 text-yellow-300" />
+          </div>
+          <p className="text-sm text-green-100 mb-2">
+            Tap here to set up earning. Only your EVM address is required — Nostr and Bittensor multisigs are auto-generated.
+          </p>
+          <div className="flex items-center gap-1 text-xs text-green-200">
+            <ArrowRight className="w-3 h-3" />
+            <span>Open Astra AI to configure</span>
           </div>
         </div>
 
@@ -929,7 +950,7 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
 
                   {/* App Content Area */}
                   <div className="h-[calc(100%-60px)] overflow-hidden">
-                    {APP_SCREENS[activeScreen]?.render()}
+                    {APP_SCREENS[activeScreen]?.render(setActiveScreen)}
                   </div>
 
                   {/* Bottom Navigation Bar */}
@@ -1069,14 +1090,16 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               One-Line Integration
             </h3>
             <p className="text-sm text-dark-400 mb-4">
-              The embed script auto-detects idle compute and connects to mining networks. 
-              No AI model specification required for regular apps — only mining nodes need explicit model config.
+              The embed script auto-detects idle compute and connects to mining networks.
+              Provide your EVM address so Nostr and Bittensor multisigs can be auto-generated.
+              No AI model specification required for regular apps.
             </p>
             <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm text-green-300 overflow-x-auto relative">
               <button className="absolute top-3 right-3 px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-400 hover:text-white transition-colors">Copy</button>
               <pre className="pt-8">{`<script 
   src="https://cdn.qvac-pear.io/inference-embed.js"
   data-app-id="your-app-id"
+  data-evm-address="0x..."
   auto-install>
 </script>`}</pre>
             </div>
@@ -1092,7 +1115,8 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <FeatureRow icon={Download} color="blue" title="Auto Download" desc="Inference runtime downloads when user opts in — no upfront bundle size" />
               <FeatureRow icon={Zap} color="green" title="Zero Configuration" desc="No AI model specification needed — uses optimal local models automatically" />
               <FeatureRow icon={Activity} color="purple" title="Smart Resource Management" desc="Pauses earning when your app needs AI, resumes when idle" />
-              <FeatureRow icon={Award} color="orange" title="Automatic Earning" desc="Earns from inference tasks (Cortensor, Fortytwo, Chutes, Earnidle) when idle" />
+              <FeatureRow icon={Award} color="orange" title="Automatic Earning" desc="Earns from inference tasks across 5 networks (Earnidle, Fortytwo, Cortensor, Chutes, Routstr) when idle" />
+              <FeatureRow icon={Lock} color="primary" title="Auto Multisigs" desc="Nostr and Bittensor multisigs are deterministically generated from the provided EVM address — no extra wallets needed" />
               <FeatureRow icon={Cpu} color="indigo" title="Local-First Inference" desc="All inference runs on user's device; results sent to tasker networks for validation" />
             </div>
           </div>
@@ -1110,9 +1134,10 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <pre>{`// Initialize the inference embed
 const inference = await QVACInference.init({
   appId: 'your-app-id',
-  autoInstall: true,
+  evmAddress: '0x...', // Required: seeds all multisigs
   onStatusChange: (status) => {
-    console.log('Inference status:', status);
+    console.log('Status:', status.status,
+                'Contributing:', status.isContributing);
   },
   onEarning: (amount) => {
     console.log('Earned:', amount);
@@ -1126,7 +1151,10 @@ inference.pause();
 inference.resume();
 
 // Check if user is contributing
-const isContributing = inference.isContributing();`}</pre>
+const contributing = inference.isContributing();
+
+// Get full status
+const status = inference.getStatus();`}</pre>
             </div>
           </div>
         </section>
@@ -1152,10 +1180,10 @@ const isContributing = inference.isContributing();`}</pre>
               Getting Started
             </h3>
             <div className="space-y-4">
-              <DocStep number="1" title="Add the Embed Script" desc="Add the QVAC-Pear embed script to your app's HTML before the closing body tag. The script loads asynchronously." link="https://qvac.tether.io/" linkText="QVAC SDK Docs →" />
-              <DocStep number="2" title="Configure Your App ID" desc="Get your app ID from the QVAC-Pear dashboard and add it to the script tag's data-app-id attribute." />
-              <DocStep number="3" title="Enable Auto-Install" desc="The auto-install attribute allows the inference runtime to download automatically when users opt in. No manual setup required." />
-              <DocStep number="4" title="Handle User Consent" desc="Users must explicitly opt in before compute contribution begins. Use the JavaScript API to show the consent prompt at the right time in your user journey." />
+              <DocStep number="1" title="Run the Node (Docker)" desc="The QVAC-Pear Miner Node runs as a Docker container. Clone the repo and start with docker-compose." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
+              <DocStep number="2" title="Configure Your EVM Address" desc="Set MULTISIG_EVM_ADDRESS in your .env or config.json. This single address auto-generates Nostr and Bittensor multisigs." />
+              <DocStep number="3" title="Start the Node" desc="docker-compose up -d starts the inference router, all 5 miners, and the web dashboard at localhost:3000." />
+              <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address to your app's HTML. Users opt in and the runtime downloads automatically." />
             </div>
           </div>
 

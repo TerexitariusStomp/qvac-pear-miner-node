@@ -10,27 +10,31 @@
   const script = document.currentScript;
   const appId = script.getAttribute('data-app-id');
   const autoInstall = script.hasAttribute('auto-install');
-  
+  const dataEvmAddress = script.getAttribute('data-evm-address');
+
   if (!appId) {
     console.error('QVAC-Pear Embed: data-app-id is required');
     return;
   }
 
   // Check for EVM wallet connection for resource confirmation
-  let evmAddress = null;
-  
-  // Check for existing wallet connection
-  if (window.ethereum && window.ethereum.selectedAddress) {
+  let evmAddress = dataEvmAddress || null;
+
+  // Check for existing wallet connection if no data-evm-address provided
+  if (!evmAddress && window.ethereum && window.ethereum.selectedAddress) {
     evmAddress = window.ethereum.selectedAddress;
   }
-  
+
   // Configuration
   const config = {
     appId: appId,
     evmAddress: evmAddress,
     autoInstall: autoInstall,
     apiEndpoint: 'https://api.qvac-pear.io',
-    version: '1.0.0'
+    version: '1.0.0',
+    isContributing: false,
+    isPaused: false,
+    status: 'initializing'
   };
 
   /**
@@ -130,17 +134,83 @@
    */
   function connectToMiningNetworks() {
     console.log('QVAC-Pear Embed: Connecting to mining networks...');
-    
+    config.status = 'connecting';
+    notifyStatusChange();
+
     // Connect to QVAC-Pear mining networks
     // This would establish connections to:
+    // - Earnidle (Solana)
+    // - Fortytwo-Network (EVM)
     // - Cortensor (Arbitrum testnet)
     // - Chutes (Bittensor)
-    // - Fortytwo-Network (EVM)
-    // - Earnidle (Solana)
     // - Routstr (Nostr)
-    
+
     // Register with the API
     registerWithAPI();
+  }
+
+  /**
+   * Pause earning (e.g. when host app needs AI)
+   */
+  function pause() {
+    if (config.isPaused) return;
+    config.isPaused = true;
+    config.status = 'paused';
+    console.log('QVAC-Pear Embed: Earning paused');
+    notifyStatusChange();
+  }
+
+  /**
+   * Resume earning
+   */
+  function resume() {
+    if (!config.isPaused) return;
+    config.isPaused = false;
+    config.status = config.isContributing ? 'active' : 'idle';
+    console.log('QVAC-Pear Embed: Earning resumed');
+    notifyStatusChange();
+  }
+
+  /**
+   * Check if user is contributing
+   */
+  function isContributing() {
+    return config.isContributing && !config.isPaused;
+  }
+
+  /**
+   * Get current status
+   */
+  function getStatus() {
+    return {
+      appId: config.appId,
+      evmAddress: config.evmAddress,
+      status: config.status,
+      isContributing: config.isContributing,
+      isPaused: config.isPaused,
+      autoInstall: config.autoInstall
+    };
+  }
+
+  let statusCallback = null;
+  let earningCallback = null;
+
+  /**
+   * Notify status change callback
+   */
+  function notifyStatusChange() {
+    if (statusCallback) {
+      statusCallback(getStatus());
+    }
+  }
+
+  /**
+   * Notify earning callback
+   */
+  function notifyEarning(amount) {
+    if (earningCallback) {
+      earningCallback(amount);
+    }
   }
 
   /**
@@ -163,8 +233,13 @@
       if (response.ok) {
         const data = await response.json();
         console.log('QVAC-Pear Embed: Registered successfully:', data);
+        config.isContributing = true;
+        config.status = config.isPaused ? 'paused' : 'active';
+        notifyStatusChange();
       } else {
         console.error('QVAC-Pear Embed: Registration failed');
+        config.status = 'error';
+        notifyStatusChange();
       }
     } catch (error) {
       console.error('QVAC-Pear Embed: API registration error:', error);
@@ -193,13 +268,37 @@
   }
 
   /**
-   * Expose public API
+   * Expose legacy QVACPear API
    */
   window.QVACPear = {
     config: config,
     connectWallet: connectWallet,
     detectIdleCompute: detectIdleCompute,
     connectToMiningNetworks: connectToMiningNetworks
+  };
+
+  /**
+   * Expose QVACInference API (preferred)
+   */
+  window.QVACInference = {
+    init: async function(opts = {}) {
+      if (opts.evmAddress) {
+        config.evmAddress = opts.evmAddress;
+      }
+      if (opts.onStatusChange) {
+        statusCallback = opts.onStatusChange;
+      }
+      if (opts.onEarning) {
+        earningCallback = opts.onEarning;
+      }
+      await initialize();
+      return getStatus();
+    },
+    pause: pause,
+    resume: resume,
+    isContributing: isContributing,
+    getStatus: getStatus,
+    connectWallet: connectWallet
   };
 
   // Initialize on load
