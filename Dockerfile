@@ -11,11 +11,17 @@ RUN apk add --no-cache \
     py3-pip \
     build-base
 
-# Copy package files
+# Copy root package files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci --only=production
+
+# Copy and build frontend
+COPY frontend/package*.json ./frontend/
+WORKDIR /app/frontend
+RUN npm ci
+COPY frontend/ ./
+RUN npx vite build
+WORKDIR /app
 
 # Copy source code
 COPY src/ ./src/

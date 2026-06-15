@@ -89,16 +89,17 @@ MACHINE_OWNER_EVM=0x... APP_ID=your-app-id npm start
 
 ### Quick Start (Desktop)
 
-The simplest way to install on desktop — no terminal needed:
+The simplest way to install on desktop — fully containerized and isolated:
 
 1. Visit the dashboard and enter your EVM payout address
 2. Click **"Download Installer"** — the website auto-detects your OS and gives you the right file:
    - **Windows**: `setup.bat` — double-click, a black window does everything
    - **macOS**: `setup.command` — double-click, terminal opens automatically
    - **Linux**: `setup.sh` — double-click or right-click → "Run as a Program"
-3. The script checks for Node.js, downloads the repo, installs dependencies, starts the node, and opens the dashboard
+3. The script checks for Docker, downloads the repo, builds a container, and starts the node inside it
+4. Everything runs in an isolated Docker container — it cannot affect your machine
 
-No terminal commands to memorize. No zip extraction. One click to download, one double-click to run.
+No terminal commands to memorize. No zip extraction. Fully containerized. One click to download, one double-click to run.
 
 ### Phone / Mobile
 

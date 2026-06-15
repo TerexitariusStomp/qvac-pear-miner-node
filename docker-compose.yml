@@ -13,6 +13,8 @@ services:
       - ./config.json:/app/config.json:ro
     environment:
       - NODE_ENV=production
+      - MACHINE_OWNER_EVM=${MACHINE_OWNER_EVM}
+      - APP_ID=${APP_ID:-protocol-default}
     restart: unless-stopped
     networks:
       - qvac-network
