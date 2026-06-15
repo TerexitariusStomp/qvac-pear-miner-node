@@ -50,28 +50,51 @@ function AIScreen() {
   const [showDownload, setShowDownload] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [installed, setInstalled] = useState(false);
-  const [multisigs, setMultisigs] = useState(null);
+
+  // Protocol multisigs are shared across all apps
+  const protocolMultisigs = {
+    nostr: 'npub1qvacprotocolmultisigabc123xyz789',
+    bittensor: '5QVACProtocolMultisigBittensorXYZ123'
+  };
 
   const handleEvmSubmit = () => {
     if (!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)) return;
-    const nostrMs = `npub1${evmAddress.slice(2, 30)}...`;
-    const bittensorMs = `5${evmAddress.slice(2, 28)}...`;
-    setMultisigs({
-      evm: evmAddress,
-      nostr: nostrMs,
-      bittensor: bittensorMs
-    });
     setShowSetup(false);
     setShowDownload(true);
   };
 
   const handleDownload = () => {
     setDownloading(true);
+    // Generate actual docker-compose.yml file for download
+    const dockerCompose = `version: '3.8'
+services:
+  qvac-pear-miner:
+    image: qvac-pear-miner:latest
+    container_name: qvac-pear-miner
+    ports:
+      - "3000:3000"
+    environment:
+      - MACHINE_OWNER_EVM=${evmAddress}
+      - APP_ID=your-app-id
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+`;
+    const blob = new Blob([dockerCompose], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'docker-compose.yml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
     setTimeout(() => {
       setDownloading(false);
       setInstalled(true);
       setShowDownload(false);
-    }, 3000);
+    }, 1500);
   };
 
   return (
@@ -84,14 +107,14 @@ function AIScreen() {
             <Zap className="w-5 h-5 text-yellow-300 ml-auto" />
           </div>
           <p className="text-sm text-indigo-100 mb-3">
-            Enter your EVM wallet address. Nostr and Bittensor multisigs are auto-generated. Funds sweep weekly to your EVM address with a 2-day denial window.
+            Enter your EVM wallet address. This is your payout address. Protocol multisigs are shared across all apps. Funds are distributed monthly — 70% to you (machine owner), 30% to the app developer.
           </p>
           <div className="flex flex-col gap-2">
             <input
               type="text"
               value={evmAddress}
               onChange={(e) => setEvmAddress(e.target.value)}
-              placeholder="0x... (EVM address only)"
+              placeholder="0x... (your payout address)"
               className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/50"
             />
             <button
@@ -99,66 +122,72 @@ function AIScreen() {
               disabled={!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)}
               className="py-2 bg-white text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Confirm & Generate Multisigs
+              Confirm Payout Address
             </button>
           </div>
         </div>
       )}
 
-      {showDownload && multisigs && (
+      {showDownload && (
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Network className="w-5 h-5 text-white" />
-            <span className="font-semibold text-white">Auto-Generated Multisigs</span>
+            <span className="font-semibold text-white">Protocol Multisigs (Shared)</span>
           </div>
           <div className="space-y-2 mb-3">
             <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
-              <span className="text-xs text-blue-100">EVM (Destination)</span>
-              <span className="text-xs text-white font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
+              <span className="text-xs text-blue-100">Your EVM Payout</span>
+              <span className="text-xs text-white font-mono">{evmAddress.slice(0, 8)}...{evmAddress.slice(-6)}</span>
             </div>
             <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
-              <span className="text-xs text-blue-100">Nostr (2-of-3)</span>
-              <span className="text-xs text-white font-mono">{multisigs.nostr}</span>
+              <span className="text-xs text-blue-100">Nostr Protocol (2-of-3)</span>
+              <span className="text-xs text-white font-mono">{protocolMultisigs.nostr.slice(0, 14)}...{protocolMultisigs.nostr.slice(-6)}</span>
             </div>
             <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
-              <span className="text-xs text-blue-100">Bittensor (2-of-3)</span>
-              <span className="text-xs text-white font-mono">{multisigs.bittensor}</span>
+              <span className="text-xs text-blue-100">Bittensor Protocol (2-of-3)</span>
+              <span className="text-xs text-white font-mono">{protocolMultisigs.bittensor.slice(0, 14)}...{protocolMultisigs.bittensor.slice(-6)}</span>
+            </div>
+          </div>
+          <div className="mb-3 p-2 bg-white/10 rounded-lg">
+            <div className="flex justify-between text-xs text-blue-100 mb-1">
+              <span>Machine Owner (You)</span>
+              <span className="font-bold text-white">70%</span>
+            </div>
+            <div className="flex justify-between text-xs text-blue-100">
+              <span>App Developer</span>
+              <span className="font-bold text-white">30%</span>
             </div>
           </div>
           <p className="text-xs text-blue-100 mb-3">
-            Funds accumulate in Nostr/Bittensor multisigs. Weekly sweeps to EVM with 48hr denial window.
+            Funds accumulate in protocol multisigs. Monthly sweeps with 48hr denial window. Split applied at distribution.
           </p>
           <button
             onClick={handleDownload}
             disabled={downloading}
             className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
-            {downloading ? 'Downloading...' : 'Download & Install Router'}
+            {downloading ? 'Downloading...' : 'Download docker-compose.yml'}
           </button>
         </div>
       )}
 
-      {installed && multisigs && (
+      {installed && (
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-white" />
-            <span className="font-semibold text-white">Inference Router Active</span>
+            <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Earning on all networks. Weekly sweeps route to your EVM address.
+            Run <code className="bg-black/20 px-1 rounded">docker-compose up -d</code> to start earning. Monthly payouts to your EVM address.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">
-              <span>EVM Destination</span>
-              <span className="font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
+              <span>Your Payout Address</span>
+              <span className="font-mono">{evmAddress.slice(0, 8)}...{evmAddress.slice(-6)}</span>
             </div>
             <div className="flex justify-between text-xs text-green-100">
-              <span>Nostr Multisig</span>
-              <span className="font-mono">{multisigs.nostr}</span>
-            </div>
-            <div className="flex justify-between text-xs text-green-100">
-              <span>Bittensor Multisig</span>
-              <span className="font-mono">{multisigs.bittensor}</span>
+              <span>Distribution</span>
+              <span className="font-mono">Monthly (70% you / 30% app)</span>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -262,7 +291,7 @@ const APP_SCREENS = {
             <Zap className="w-5 h-5 text-yellow-300" />
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Tap here to set up earning. Only your EVM address is required — Nostr and Bittensor multisigs are auto-generated.
+            Tap here to set up earning. Enter your EVM payout address. Protocol multisigs are shared across all apps. Monthly distribution: 70% to you, 30% to app developer.
           </p>
           <div className="flex items-center gap-1 text-xs text-green-200">
             <ArrowRight className="w-3 h-3" />
@@ -1009,13 +1038,13 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
                 <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">1</div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-white mb-1">Enter Your EVM Address</h4>
+                  <h4 className="font-medium text-white mb-1">Enter Your EVM Payout Address</h4>
                   <p className="text-sm text-dark-300 mb-2">
-                    This is the only address you need to provide. Nostr and Bittensor multisigs are auto-generated from it.
+                    This is where you receive your 70% share. Protocol multisigs are shared across all apps — no individual generation needed.
                   </p>
                   <div className="flex items-center gap-2 text-xs text-indigo-300">
                     <Lock className="w-3 h-3" />
-                    <span>Your EVM address seeds all multisigs deterministically</span>
+                    <span>Your EVM address is your payout destination</span>
                   </div>
                 </div>
               </div>
@@ -1024,9 +1053,9 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
                 <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">2</div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-white mb-1">Confirm Multisigs & Download</h4>
+                  <h4 className="font-medium text-white mb-1">Confirm & Download Router</h4>
                   <p className="text-sm text-dark-300 mb-2">
-                    Preview your auto-generated Nostr (Cashu 2-of-3) and Bittensor (Substrate 2-of-3) multisigs. Download the router to begin.
+                    Preview the shared protocol multisigs. Download docker-compose.yml and run docker-compose up -d to start earning.
                   </p>
                   <div className="flex items-center gap-2 text-xs text-indigo-300">
                     <Network className="w-3 h-3" />
@@ -1039,13 +1068,13 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
                 <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">3</div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-white mb-1">Earn & Manage Weekly Sweeps</h4>
+                  <h4 className="font-medium text-white mb-1">Earn & Receive Monthly Payouts</h4>
                   <p className="text-sm text-dark-300 mb-2">
-                    Inference rewards flow into network multisigs. Every Sunday, a sweep to your EVM address is initiated with a 48-hour denial window.
+                    Inference rewards accumulate in protocol multisigs. Monthly sweeps distribute funds: 70% to machine owner, 30% to app developer. 48-hour denial window.
                   </p>
                   <div className="flex items-center gap-2 text-xs text-indigo-300">
                     <Clock className="w-3 h-3" />
-                    <span>Deny any sweep within 48 hours: node scripts/weekly-fund-sweep.js --deny &lt;id&gt;</span>
+                    <span>Deny any sweep within 48 hours: node scripts/monthly-fund-sweep.js --deny &lt;id&gt;</span>
                   </div>
                 </div>
               </div>
@@ -1056,8 +1085,8 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-xs text-indigo-300">Earnidle (Solana)</span>
               <span className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-300">Fortytwo (EVM)</span>
               <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300">Cortensor (Arbitrum)</span>
-              <span className="px-3 py-1 bg-orange-500/20 border border-orange-500/30 rounded-full text-xs text-orange-300">Chutes (Bittensor Multisig)</span>
-              <span className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-xs text-green-300">Routstr (Nostr Multisig)</span>
+              <span className="px-3 py-1 bg-orange-500/20 border border-orange-500/30 rounded-full text-xs text-orange-300">Chutes (Bittensor Protocol)</span>
+              <span className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-xs text-green-300">Routstr (Nostr Protocol)</span>
             </div>
           </div>
         </section>
@@ -1110,7 +1139,8 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <FeatureRow icon={Zap} color="green" title="Zero Configuration" desc="No AI model specification needed — uses optimal local models automatically" />
               <FeatureRow icon={Activity} color="purple" title="Smart Resource Management" desc="Pauses earning when your app needs AI, resumes when idle" />
               <FeatureRow icon={Award} color="orange" title="Automatic Earning" desc="Earns from inference tasks across 5 networks (Earnidle, Fortytwo, Cortensor, Chutes, Routstr) when idle" />
-              <FeatureRow icon={Lock} color="primary" title="Auto Multisigs" desc="Nostr and Bittensor multisigs are deterministically generated from the provided EVM address — no extra wallets needed" />
+              <FeatureRow icon={Lock} color="primary" title="Protocol Multisigs" desc="Shared Nostr and Bittensor protocol multisigs. All apps use the same addresses — no per-app generation" />
+              <FeatureRow icon={BarChart3} color="pink" title="Monthly Revenue Split" desc="70% to machine owner (you), 30% to app developer. Distributed monthly with 48-hour denial window" />
               <FeatureRow icon={Cpu} color="indigo" title="Local-First Inference" desc="All inference runs on user's device; results sent to tasker networks for validation" />
             </div>
           </div>
@@ -1175,9 +1205,9 @@ const status = inference.getStatus();`}</pre>
             </h3>
             <div className="space-y-4">
               <DocStep number="1" title="Run the Node (Docker)" desc="The QVAC-Pear Miner Node runs as a Docker container. Clone the repo and start with docker-compose." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
-              <DocStep number="2" title="Configure Your EVM Address" desc="Set MULTISIG_EVM_ADDRESS in your .env or config.json. This single address auto-generates Nostr and Bittensor multisigs." />
+              <DocStep number="2" title="Configure Your EVM Payout Address" desc="Set MACHINE_OWNER_EVM in your .env. This is where you receive your 70% monthly share. Protocol multisigs are shared — no generation needed." />
               <DocStep number="3" title="Start the Node" desc="docker-compose up -d starts the inference router, all 5 miners, and the web dashboard at localhost:3000." />
-              <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address to your app's HTML. Users opt in and the runtime downloads automatically." />
+              <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address (machine owner's payout address) to your app's HTML. Users opt in and the runtime downloads automatically." />
             </div>
           </div>
 
@@ -1192,7 +1222,7 @@ const status = inference.getStatus();`}</pre>
               <DocItem icon={Cpu} color="blue" title="Local-First Inference" desc="All AI inference runs locally on the user's device using QVAC. No raw user data leaves the device during inference. Only inference results (task outputs) are transmitted to tasker networks." />
               <DocItem icon={Network} color="purple" title="Tasker Network Transmission" desc="Inference results are securely sent to mining/tasker networks (Earnidle, Fortytwo, Cortensor, Chutes, Routstr) for task validation and reward distribution. This is how earning works — completed inference tasks are verified by the networks." />
               <DocItem icon={Activity} color="indigo" title="Transparent Resource Usage" desc="Users can see exactly when their compute is being used, which miner networks are active, and real-time earnings in the dashboard." />
-              <DocItem icon={Lock} color="orange" title="Multisig Fund Management" desc="Nostr and Bittensor multisigs are auto-generated from the user's EVM address. Funds accumulate in network-specific multisigs and sweep weekly to the EVM address with a 48-hour denial window." />
+              <DocItem icon={Lock} color="orange" title="Protocol Multisig Fund Management" desc="Nostr and Bittensor protocol multisigs are shared across all apps. Funds accumulate monthly and are split 70% to machine owner, 30% to app developer. 48-hour denial window on each sweep." />
             </div>
           </div>
 
@@ -1210,7 +1240,7 @@ const status = inference.getStatus();`}</pre>
               <ArchItem icon={Clock} color="orange" title="Time Scheduler" desc="Automatic day/night mode switching (config: scheduler.enabled: true, nightStart: 20, nightEnd: 6)" verified={true} />
               <ArchItem icon={Activity} color="purple" title="Task Monitor" desc="Real-time inference task detection and miner notification (TaskMonitor class)" verified={true} />
               <ArchItem icon={Cpu} color="indigo" title="Parallel Miners (5)" desc="Earnidle, Fortytwo, Cortensor, Chutes, Routstr in parallel monitoring mode with inference router" verified={true} />
-              <ArchItem icon={Lock} color="primary" title="Multisig Manager" desc="Auto-generates Nostr/Bittensor multisigs from EVM address with weekly fund sweeps (config: multisig.enabled: true)" verified={true} />
+              <ArchItem icon={Lock} color="primary" title="Protocol Multisig Manager" desc="Shared Nostr/Bittensor protocol multisigs with monthly fund sweeps and 70/30 revenue split (config: multisig.enabled: true)" verified={true} />
             </div>
           </div>
 
@@ -1227,8 +1257,8 @@ const status = inference.getStatus();`}</pre>
               <FAQItem question="Is inference data sent to external servers?" answer="Inference runs locally on the user's device. Only the inference results (task outputs) are transmitted to tasker networks for validation and reward distribution. No raw user data or prompts leave the device." />
               <FAQItem question="What if the user declines?" answer="Your app continues to work normally. The user just won't earn from compute contribution. They can always opt in later through your app's settings or the dashboard." />
               <FAQItem question="What platforms are supported?" answer="Desktop (Linux, macOS, Windows) via Docker. The inference router runs as a container. Mobile support is planned." />
-              <FAQItem question="How do the weekly sweeps work?" answer="Funds from Nostr (Routstr) and Bittensor (Chutes) multisigs are swept to your EVM address every Sunday. You have 48 hours to deny any sweep. If not denied, the sweep completes automatically." />
-              <FAQItem question="Why do I only need an EVM address?" answer="Nostr and Bittensor multisigs are deterministically generated from your EVM address. This means you only need to remember one address. The private keys for the multisig signers are derived from the same seed." />
+              <FAQItem question="How do the monthly payouts work?" answer="Funds from protocol multisigs (Nostr and Bittensor) are distributed monthly. 70% goes to the machine owner (the EVM address you provide), 30% to the app developer who embedded the script. You have 48 hours to deny any sweep." />
+              <FAQItem question="Why are multisigs shared across apps?" answer="Protocol multisigs are managed at the network level. All apps use the same Nostr and Bittensor multisig addresses. This simplifies setup — you only provide your EVM payout address, and the protocol handles distribution." />
             </div>
           </div>
         </section>

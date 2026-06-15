@@ -46,7 +46,7 @@
         "requiresK8s": true,
         "stackCompatible": false,
         "compatibilityMode": true,
-        "note": "Bittensor multisig is auto-generated from your EVM address. Funds are swept weekly to EVM multisig with 2-day denial window.",
+        "note": "Bittensor protocol multisig is shared across all apps. Funds are swept monthly and split between machine owner (70%) and app developer (30%).",
         "autoFundSweep": true
       }
     },
@@ -77,35 +77,39 @@
         "description": "Nostr Cashu NIP-60 multisig (auto-generated from EVM) for Routstr AI inference routing rewards",
         "multisigType": "cashu-p2sh",
         "multisigThreshold": "2-of-3",
-        "note": "Nostr multisig is auto-generated from your EVM address. Funds are swept weekly to EVM multisig with 2-day denial window.",
+        "note": "Nostr protocol multisig is shared across all apps. Funds are swept monthly and split between machine owner (70%) and app developer (30%).",
         "autoFundSweep": true
       }
     }
   },
   "multisig": {
     "enabled": true,
-    "evmAddress": "0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf",
-    "weeklySweep": {
+    "machineOwnerAddress": "0xa2bCA2e01Fc1631e5577994404C4e3d742b284bf",
+    "revenueSplit": {
+      "machineOwner": 0.70,
+      "appDeveloper": 0.30
+    },
+    "monthlySweep": {
       "enabled": true,
-      "dayOfWeek": 0,
+      "dayOfMonth": 1,
       "hour": 0,
       "minute": 0,
       "denialWindowHours": 48
     },
-    "networks": {
+    "protocolMultisigs": {
       "nostr": {
         "enabled": true,
         "protocol": "cashu-nip60-p2sh",
+        "address": "npub1qvacprotocolmultisigabc123xyz789",
         "threshold": 2,
-        "signers": 3,
-        "autoGenerate": true
+        "signers": 3
       },
       "bittensor": {
         "enabled": true,
         "protocol": "substrate-multisig",
+        "address": "5QVACProtocolMultisigBittensorXYZ123",
         "threshold": 2,
-        "signers": 3,
-        "autoGenerate": true
+        "signers": 3
       }
     }
   },

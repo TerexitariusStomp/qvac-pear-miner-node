@@ -10,17 +10,16 @@
   const script = document.currentScript;
   const appId = script.getAttribute('data-app-id');
   const autoInstall = script.hasAttribute('auto-install');
-  const dataEvmAddress = script.getAttribute('data-evm-address');
+  const machineOwnerAddress = script.getAttribute('data-evm-address');
 
   if (!appId) {
     console.error('QVAC-Pear Embed: data-app-id is required');
     return;
   }
 
-  // Check for EVM wallet connection for resource confirmation
-  let evmAddress = dataEvmAddress || null;
-
-  // Check for existing wallet connection if no data-evm-address provided
+  // data-evm-address = machine owner's payout address
+  // Protocol multisigs are shared across all apps
+  let evmAddress = machineOwnerAddress || null;
   if (!evmAddress && window.ethereum && window.ethereum.selectedAddress) {
     evmAddress = window.ethereum.selectedAddress;
   }
@@ -28,7 +27,7 @@
   // Configuration
   const config = {
     appId: appId,
-    evmAddress: evmAddress,
+    machineOwnerAddress: evmAddress,
     autoInstall: autoInstall,
     apiEndpoint: 'https://api.qvac-pear.io',
     version: '1.0.0',
@@ -67,17 +66,17 @@
   }
 
   /**
-   * Connect to EVM wallet
+   * Connect to EVM wallet (machine owner address)
    */
   async function connectWallet() {
     if (window.ethereum) {
       try {
-        const accounts = await window.ethereum.request({ 
-          method: 'eth_requestAccounts' 
+        const accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts'
         });
         evmAddress = accounts[0];
-        config.evmAddress = evmAddress;
-        console.log('QVAC-Pear Embed: Wallet connected:', evmAddress);
+        config.machineOwnerAddress = evmAddress;
+        console.log('QVAC-Pear Embed: Machine owner wallet connected:', evmAddress);
       } catch (error) {
         console.error('QVAC-Pear Embed: Wallet connection failed:', error);
         throw error;
@@ -225,7 +224,7 @@
         },
         body: JSON.stringify({
           appId: config.appId,
-          evmAddress: config.evmAddress,
+          machineOwnerAddress: config.machineOwnerAddress,
           version: config.version
         })
       });
@@ -282,8 +281,8 @@
    */
   window.QVACInference = {
     init: async function(opts = {}) {
-      if (opts.evmAddress) {
-        config.evmAddress = opts.evmAddress;
+      if (opts.machineOwnerAddress) {
+        config.machineOwnerAddress = opts.machineOwnerAddress;
       }
       if (opts.onStatusChange) {
         statusCallback = opts.onStatusChange;

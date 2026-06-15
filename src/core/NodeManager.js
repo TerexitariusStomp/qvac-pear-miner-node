@@ -44,12 +44,12 @@ export class NodeManager {
     this.p2pNetwork = new PearP2P(this.config.p2p.pear);
     await this.p2pNetwork.initialize();
 
-    // Initialize multisig manager (generates Nostr/Bittensor multisigs from EVM)
+    // Initialize multisig manager (protocol-level multisigs)
     if (this.config.multisig?.enabled) {
       this.multisigManager = new MultisigManager(this.config.multisig);
       await this.multisigManager.initialize();
       const msStatus = this.multisigManager.getStatus();
-      this.logger.info(`Multisig system active: ${Object.keys(msStatus.multisigs).length} multisigs`);
+      this.logger.info(`Protocol multisig system active: ${Object.keys(msStatus.protocolMultisigs).length} multisigs`);
     }
 
     // Initialize wallet manager
