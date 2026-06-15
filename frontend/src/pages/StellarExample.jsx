@@ -44,6 +44,191 @@ import {
   Database
 } from 'lucide-react'
 
+function AIScreen() {
+  const [showSetup, setShowSetup] = useState(true);
+  const [evmAddress, setEvmAddress] = useState('');
+  const [showDownload, setShowDownload] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [installed, setInstalled] = useState(false);
+  const [multisigs, setMultisigs] = useState(null);
+
+  const handleEvmSubmit = () => {
+    if (!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)) return;
+    const nostrMs = `npub1${evmAddress.slice(2, 30)}...`;
+    const bittensorMs = `5${evmAddress.slice(2, 28)}...`;
+    setMultisigs({
+      evm: evmAddress,
+      nostr: nostrMs,
+      bittensor: bittensorMs
+    });
+    setShowSetup(false);
+    setShowDownload(true);
+  };
+
+  const handleDownload = () => {
+    setDownloading(true);
+    setTimeout(() => {
+      setDownloading(false);
+      setInstalled(true);
+      setShowDownload(false);
+    }, 3000);
+  };
+
+  return (
+    <div className="space-y-4 pb-24">
+      {showSetup && (
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Cpu className="w-5 h-5 text-white" />
+            <span className="font-semibold text-white">Contribute Idle Inference & Earn</span>
+            <Zap className="w-5 h-5 text-yellow-300 ml-auto" />
+          </div>
+          <p className="text-sm text-indigo-100 mb-3">
+            Enter your EVM wallet address. Nostr and Bittensor multisigs are auto-generated. Funds sweep weekly to your EVM address with a 2-day denial window.
+          </p>
+          <div className="flex flex-col gap-2">
+            <input
+              type="text"
+              value={evmAddress}
+              onChange={(e) => setEvmAddress(e.target.value)}
+              placeholder="0x... (EVM address only)"
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/50"
+            />
+            <button
+              onClick={handleEvmSubmit}
+              disabled={!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)}
+              className="py-2 bg-white text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Confirm & Generate Multisigs
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showDownload && multisigs && (
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Network className="w-5 h-5 text-white" />
+            <span className="font-semibold text-white">Auto-Generated Multisigs</span>
+          </div>
+          <div className="space-y-2 mb-3">
+            <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
+              <span className="text-xs text-blue-100">EVM (Destination)</span>
+              <span className="text-xs text-white font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
+            </div>
+            <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
+              <span className="text-xs text-blue-100">Nostr (2-of-3)</span>
+              <span className="text-xs text-white font-mono">{multisigs.nostr}</span>
+            </div>
+            <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
+              <span className="text-xs text-blue-100">Bittensor (2-of-3)</span>
+              <span className="text-xs text-white font-mono">{multisigs.bittensor}</span>
+            </div>
+          </div>
+          <p className="text-xs text-blue-100 mb-3">
+            Funds accumulate in Nostr/Bittensor multisigs. Weekly sweeps to EVM with 48hr denial window.
+          </p>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
+          >
+            {downloading ? 'Downloading...' : 'Download & Install Router'}
+          </button>
+        </div>
+      )}
+
+      {installed && multisigs && (
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="w-5 h-5 text-white" />
+            <span className="font-semibold text-white">Inference Router Active</span>
+          </div>
+          <p className="text-sm text-green-100 mb-2">
+            Earning on all networks. Weekly sweeps route to your EVM address.
+          </p>
+          <div className="space-y-1 mb-3">
+            <div className="flex justify-between text-xs text-green-100">
+              <span>EVM Destination</span>
+              <span className="font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-green-100">
+              <span>Nostr Multisig</span>
+              <span className="font-mono">{multisigs.nostr}</span>
+            </div>
+            <div className="flex justify-between text-xs text-green-100">
+              <span>Bittensor Multisig</span>
+              <span className="font-mono">{multisigs.bittensor}</span>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Earnidle</span>
+            <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Fortytwo</span>
+            <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Cortensor</span>
+            <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Chutes</span>
+            <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Routstr</span>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-white" />
+            <span className="font-semibold text-white">Astra AI Companion</span>
+          </div>
+          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Offline • Llama 3.2 1B</span>
+        </div>
+        <p className="text-sm text-green-100">On-device AI via QVAC • 72-chunk astronomy corpus • Works at dark sites</p>
+      </div>
+
+      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+        <ChatMessage
+          sender="ai"
+          content="Welcome to Stellar Field! I'm Astra, your on-device astronomy companion. Ask me about tonight's targets, telescope settings, or constellation mythology."
+          time="9:41"
+        />
+        <ChatMessage
+          sender="user"
+          content={`What's the best target for my 6" dobsonian tonight?`}
+          time="9:42"
+        />
+        <ChatMessage
+          sender="ai"
+          content={`For a 6" dobsonian at Bortle 3, Jupiter is perfectly positioned at 38° altitude (mag -2.1). Saturn at 22° shows ring detail. The Orion Nebula (M42) at 31° will reveal the Trapezium cluster. Want a finder chart for any of these?`}
+          time="9:42"
+          citations={['Messier Catalog', 'Sky Tonight Data']}
+        />
+      </div>
+
+      <div>
+        <p className="text-xs text-gray-400 mb-2">Quick Questions</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            'Where is Jupiter?',
+            'Best eyepiece for Saturn?',
+            'How to find Andromeda?',
+            'Moon phase tonight?',
+            'Bortle scale explained'
+          ].map((q, i) => (
+            <button key={i} className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
+              {q}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-950 to-transparent pb-8">
+        <div className="flex items-center gap-2 bg-gray-800/50 rounded-xl p-2 border border-gray-700">
+          <button className="p-2 text-gray-400 hover:text-white"><Mic className="w-4 h-4" /></button>
+          <input type="text" placeholder="Ask Astra..." className="flex-1 bg-transparent text-white placeholder-gray-500 text-sm outline-none" />
+          <button className="p-2 text-indigo-400 hover:text-indigo-300"><ArrowRight className="w-4 h-4" /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Stellar Field App Screens - simulating the actual app UI
 const APP_SCREENS = {
   home: {
@@ -248,198 +433,7 @@ const APP_SCREENS = {
   ai: {
     title: 'Astra AI',
     icon: Brain,
-    render: () => {
-      const [showSetup, setShowSetup] = useState(true);
-      const [evmAddress, setEvmAddress] = useState('');
-      const [showDownload, setShowDownload] = useState(false);
-      const [downloading, setDownloading] = useState(false);
-      const [installed, setInstalled] = useState(false);
-      const [multisigs, setMultisigs] = useState(null);
-
-      const handleEvmSubmit = () => {
-        if (!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)) return;
-        // Generate deterministic multisigs from EVM address
-        const nostrMs = `npub1${evmAddress.slice(2, 30)}...`;
-        const bittensorMs = `5${evmAddress.slice(2, 28)}...`;
-        setMultisigs({
-          evm: evmAddress,
-          nostr: nostrMs,
-          bittensor: bittensorMs
-        });
-        setShowSetup(false);
-        setShowDownload(true);
-      };
-
-      const handleDownload = () => {
-        setDownloading(true);
-        setTimeout(() => {
-          setDownloading(false);
-          setInstalled(true);
-          setShowDownload(false);
-        }, 3000);
-      };
-
-      return (
-        <div className="space-y-4 pb-24">
-          {/* EVM Wallet Setup */}
-          {showSetup && (
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Cpu className="w-5 h-5 text-white" />
-                <span className="font-semibold text-white">Contribute Idle Inference & Earn</span>
-                <Zap className="w-5 h-5 text-yellow-300 ml-auto" />
-              </div>
-              <p className="text-sm text-indigo-100 mb-3">
-                Enter your EVM wallet address. Nostr and Bittensor multisigs are auto-generated. Funds sweep weekly to your EVM address with a 2-day denial window.
-              </p>
-              <div className="flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={evmAddress}
-                  onChange={(e) => setEvmAddress(e.target.value)}
-                  placeholder="0x... (EVM address only)"
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/50"
-                />
-                <button 
-                  onClick={handleEvmSubmit}
-                  disabled={!evmAddress.match(/^0x[a-fA-F0-9]{40}$/)}
-                  className="py-2 bg-white text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Confirm & Generate Multisigs
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Multisig Preview */}
-          {showDownload && multisigs && (
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Network className="w-5 h-5 text-white" />
-                <span className="font-semibold text-white">Auto-Generated Multisigs</span>
-              </div>
-              <div className="space-y-2 mb-3">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
-                  <span className="text-xs text-blue-100">EVM (Destination)</span>
-                  <span className="text-xs text-white font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
-                  <span className="text-xs text-blue-100">Nostr (2-of-3)</span>
-                  <span className="text-xs text-white font-mono">{multisigs.nostr}</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg p-2">
-                  <span className="text-xs text-blue-100">Bittensor (2-of-3)</span>
-                  <span className="text-xs text-white font-mono">{multisigs.bittensor}</span>
-                </div>
-              </div>
-              <p className="text-xs text-blue-100 mb-3">
-                Funds accumulate in Nostr/Bittensor multisigs. Weekly sweeps to EVM with 48hr denial window.
-              </p>
-              <button 
-                onClick={handleDownload}
-                disabled={downloading}
-                className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
-              >
-                {downloading ? 'Downloading...' : 'Download & Install Router'}
-              </button>
-            </div>
-          )}
-
-          {/* Installed Success */}
-          {installed && multisigs && (
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-white" />
-                <span className="font-semibold text-white">Inference Router Active</span>
-              </div>
-              <p className="text-sm text-green-100 mb-2">
-                Earning on all networks. Weekly sweeps route to your EVM address.
-              </p>
-              <div className="space-y-1 mb-3">
-                <div className="flex justify-between text-xs text-green-100">
-                  <span>EVM Destination</span>
-                  <span className="font-mono">{multisigs.evm.slice(0, 8)}...{multisigs.evm.slice(-6)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-green-100">
-                  <span>Nostr Multisig</span>
-                  <span className="font-mono">{multisigs.nostr}</span>
-                </div>
-                <div className="flex justify-between text-xs text-green-100">
-                  <span>Bittensor Multisig</span>
-                  <span className="font-mono">{multisigs.bittensor}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Earnidle</span>
-                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Fortytwo</span>
-                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Cortensor</span>
-                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Chutes</span>
-                <span className="px-2 py-1 bg-white/20 rounded text-xs text-white">Routstr</span>
-              </div>
-            </div>
-          )}
-
-          {/* AI Mode Indicator */}
-          <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Brain className="w-5 h-5 text-white" />
-                <span className="font-semibold text-white">Astra AI Companion</span>
-              </div>
-              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Offline • Llama 3.2 1B</span>
-            </div>
-            <p className="text-sm text-green-100">On-device AI via QVAC • 72-chunk astronomy corpus • Works at dark sites</p>
-          </div>
-
-          {/* Chat Interface */}
-        <div className="space-y-3 max-h-[300px] overflow-y-auto">
-          <ChatMessage 
-            sender="ai" 
-            content="Welcome to Stellar Field! I'm Astra, your on-device astronomy companion. Ask me about tonight's targets, telescope settings, or constellation mythology." 
-            time="9:41"
-          />
-          <ChatMessage 
-            sender="user" 
-            content={`What's the best target for my 6" dobsonian tonight?`} 
-            time="9:42"
-          />
-          <ChatMessage 
-            sender="ai" 
-            content={`For a 6" dobsonian at Bortle 3, Jupiter is perfectly positioned at 38° altitude (mag -2.1). Saturn at 22° shows ring detail. The Orion Nebula (M42) at 31° will reveal the Trapezium cluster. Want a finder chart for any of these?`} 
-            time="9:42"
-            citations={['Messier Catalog', 'Sky Tonight Data']}
-          />
-        </div>
-
-        {/* Quick Prompts */}
-        <div>
-          <p className="text-xs text-gray-400 mb-2">Quick Questions</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              'Where is Jupiter?',
-              'Best eyepiece for Saturn?',
-              'How to find Andromeda?',
-              'Moon phase tonight?',
-              'Bortle scale explained'
-            ].map((q, i) => (
-              <button key={i} className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-950 to-transparent pb-8">
-          <div className="flex items-center gap-2 bg-gray-800/50 rounded-xl p-2 border border-gray-700">
-            <button className="p-2 text-gray-400 hover:text-white"><Mic className="w-4 h-4" /></button>
-            <input type="text" placeholder="Ask Astra..." className="flex-1 bg-transparent text-white placeholder-gray-500 text-sm outline-none" />
-            <button className="p-2 text-indigo-400 hover:text-indigo-300"><ArrowRight className="w-4 h-4" /></button>
-          </div>
-        </div>
-      </div>
-      )
-    }
+    render: () => <AIScreen />
   },
   camera: {
     title: 'Camera',
