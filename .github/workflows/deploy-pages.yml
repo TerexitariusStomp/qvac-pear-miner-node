@@ -29,10 +29,13 @@ jobs:
           cd frontend
           npm install
           npx vite build
-      - name: Add CNAME and .nojekyll
+      - name: Add CNAME, .nojekyll, and SPA 404 fallback
         run: |
           echo 'miner.templeearth.cc' > frontend/dist/CNAME
           touch frontend/dist/.nojekyll
+          cp frontend/dist/index.html frontend/dist/404.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -43,7 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: https://miner.templeearth.cc
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
