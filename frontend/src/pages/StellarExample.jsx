@@ -63,15 +63,35 @@ function AIScreen() {
     setShowDownload(true);
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     setDownloading(true);
 
-    const html = generateSetupHtml(evmAddress);
-    const blob = new Blob([html], { type: 'text/html' });
+    const ua = navigator.userAgent;
+    let os = 'linux';
+    if (ua.indexOf('Win') !== -1) os = 'win';
+    else if (ua.indexOf('Mac') !== -1) os = 'mac';
+
+    let content = '', filename = '', mime = 'text/plain';
+
+    if (os === 'win') {
+      filename = 'setup.bat';
+      mime = 'application/bat';
+      content = `@echo off\r\necho ======================================\r\necho  QVAC-Pear Miner Installer\r\necho ======================================\r\necho.\r\necho Checking Node.js...\r\nnode --version >nul 2>&1\r\nif errorlevel 1 (\r\n  echo.\r\n  echo Node.js is NOT installed.\r\n  echo Please download and install it from:\r\n  echo https://nodejs.org/en/download/\r\n  echo.\r\n  echo After installing, close this window and double-click setup.bat again.\r\n  pause\r\n  exit /b 1\r\n)\r\necho Node.js found.\r\necho.\r\necho Downloading QVAC-Pear Miner...\r\nif not exist ".\\qvac-pear-miner-node" (\r\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git\r\n  if errorlevel 1 (\r\n    echo Git not found. Please install Git from https://git-scm.com/download/win\r\n    pause\r\n    exit /b 1\r\n  )\r\n)\r\ncd qvac-pear-miner-node\r\necho Installing dependencies...\r\ncall npm install\r\necho Starting node...\r\nset MACHINE_OWNER_EVM=${evmAddress}\r\nset APP_ID=protocol-default\r\nstart /b node src\\index.js > node.log 2>&1\r\necho.\r\necho Waiting for server...\r\ntimeout /t 8 /nobreak >nul\r\necho Opening dashboard...\r\nstart http://localhost:3000\r\necho.\r\necho ======================================\r\necho  Done! Dashboard opened in browser.\r\necho  You can close this window.\r\necho ======================================\r\npause\r\n`;
+    } else if (os === 'mac') {
+      filename = 'setup.command';
+      mime = 'application/x-macos';
+      content = `#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner Installer"\necho "========================================"\necho\necho "Checking Node.js..."\nif ! command -v node &> /dev/null; then\n  echo "Node.js not found. Please install it from https://nodejs.org/"\n  echo "Or run: brew install node"\n  exit 1\nfi\nnode --version\necho\necho "Downloading QVAC-Pear Miner..."\nif [ ! -d "qvac-pear-miner-node" ]; then\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git || { echo "Git not found. Install Xcode Command Line Tools."; exit 1; }\nfi\ncd qvac-pear-miner-node\necho "Installing dependencies..."\nnpm install\necho "Starting node..."\nMACHINE_OWNER_EVM=${evmAddress} APP_ID=protocol-default node src/index.js &\necho\necho "Waiting for server..."\nsleep 8\necho "Opening dashboard..."\nopen http://localhost:3000\necho\necho "========================================"\necho "  Done! Dashboard opened."\necho "  You can close this terminal."\necho "========================================"\nread -p "Press Enter to close"\n`;
+    } else {
+      filename = 'setup.sh';
+      mime = 'application/x-sh';
+      content = `#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner Installer"\necho "========================================"\necho\necho "Checking Node.js..."\nif ! command -v node &> /dev/null; then\n  echo "Node.js not found. Please install it:"\n  echo "  sudo apt install nodejs npm   (Debian/Ubuntu)"\n  echo "  sudo dnf install nodejs npm     (Fedora)"\n  exit 1\nfi\nnode --version\necho\necho "Downloading QVAC-Pear Miner..."\nif [ ! -d "qvac-pear-miner-node" ]; then\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git || { echo "Git not found. Install git."; exit 1; }\nfi\ncd qvac-pear-miner-node\necho "Installing dependencies..."\nnpm install\necho "Starting node..."\nMACHINE_OWNER_EVM=${evmAddress} APP_ID=protocol-default nohup node src/index.js > node.log 2>&1 &\necho\necho "Waiting for server..."\nsleep 8\necho "Opening dashboard..."\nxdg-open http://localhost:3000 || x-www-browser http://localhost:3000 || echo "Please open http://localhost:3000"\necho\necho "========================================"\necho "  Done!"\necho "========================================"\nread -p "Press Enter to close"\n`;
+    }
+
+    const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'setup.html';
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -81,212 +101,8 @@ function AIScreen() {
       setDownloading(false);
       setInstalled(true);
       setShowDownload(false);
-    }, 800);
+    }, 600);
   };
-
-  const generateSetupHtml = (addr) => `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QVAC-Pear Miner Setup</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#e0e0e0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.wizard{background:#0f0f23;border-radius:20px;border:1px solid rgba(255,255,255,0.1);max-width:540px;width:100%;padding:40px;box-shadow:0 25px 50px rgba(0,0,0,0.5)}
-.progress{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:30px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:2px;transition:width .4s ease}
-.step{display:none}
-.step.active{display:block;animation:fadeIn .3s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-h2{font-size:1.5rem;margin-bottom:8px;color:#fff}
-p{color:#94a3b8;margin-bottom:24px;line-height:1.5;font-size:.95rem}
-.logo{width:64px;height:64px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;font-size:28px}
-.btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s;margin-top:20px;background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff}
-.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(99,102,241,.3)}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn-secondary{background:rgba(255,255,255,.1);color:#fff;margin-top:10px}
-.btn-secondary:hover{background:rgba(255,255,255,.15)}
-.nav{display:flex;gap:10px}
-.nav .btn{flex:1;margin-top:20px}
-.check{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-.check:last-child{border-bottom:none}
-.check-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
-.ok{background:#22c55e;color:#fff}
-.fail{background:rgba(239,68,68,.2);color:#ef4444}
-.pending{background:rgba(255,255,255,.1);color:#94a3b8}
-.check-title{color:#fff;font-size:.9rem}
-.check-desc{color:#64748b;font-size:.75rem}
-input[type="text"]{width:100%;padding:12px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:.95rem;margin-bottom:16px;outline:none}
-input:focus{border-color:#6366f1}
-input.error{border-color:#ef4444}
-.code{background:#0a0a0a;border-radius:10px;padding:16px;font-family:'SF Mono',monospace;font-size:.85rem;color:#4ade80;margin:12px 0;word-break:break-all;border:1px solid rgba(255,255,255,.05);position:relative}
-.copy{position:absolute;top:8px;right:8px;padding:4px 10px;background:rgba(255,255,255,.1);border:none;border-radius:6px;color:#fff;font-size:.75rem;cursor:pointer}
-.copy:hover{background:rgba(255,255,255,.2)}
-.tag{display:inline-block;padding:4px 10px;background:rgba(99,102,241,.2);color:#a5b4fc;border-radius:6px;font-size:.75rem;margin-bottom:16px}
-.success{text-align:center;padding:20px 0}
-.success-circle{width:80px;height:80px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px;animation:scaleIn .4s ease}
-@keyframes scaleIn{from{transform:scale(0)}to{transform:scale(1)}}
-.hidden{display:none}
-.poll{color:#4ade80;font-size:.85rem;margin-top:8px}
-</style>
-</head>
-<body>
-<div class="wizard">
-<div class="progress"><div class="progress-fill" id="bar" style="width:20%"></div></div>
-
-<!-- Step 1 -->
-<div class="step active" id="s1">
-<div class="logo">🍐</div>
-<div class="tag">QVAC-Pear Miner</div>
-<h2>Welcome</h2>
-<p>This wizard will set up your inference router. Double-clicking this file opened the GUI — now let's get you earning.</p>
-<button class="btn" onclick="go(2)">Get Started</button>
-</div>
-
-<!-- Step 2 -->
-<div class="step" id="s2">
-<h2>Check Prerequisites</h2>
-<p>Make sure Node.js 18+ is installed. Docker is optional.</p>
-<div id="checks">
-<div class="check"><div class="check-icon pending" id="c1">○</div><div><div class="check-title">Node.js 18+</div><div class="check-desc">Run <code>node --version</code> in your terminal</div></div></div>
-<div class="check"><div class="check-icon pending" id="c2">○</div><div><div class="check-title">npm</div><div class="check-desc">Comes with Node.js</div></div></div>
-<div class="check"><div class="check-icon pending" id="c3">○</div><div><div class="check-title">Docker (optional)</div><div class="check-desc">For containerized install</div></div></div>
-</div>
-<div class="nav">
-<button class="btn btn-secondary" onclick="go(1)">Back</button>
-<button class="btn" onclick="markReady()">I have Node.js installed</button>
-</div>
-</div>
-
-<!-- Step 3 -->
-<div class="step" id="s3">
-<h2>Configure</h2>
-<p>Your EVM payout address is pre-filled from the dashboard. Edit if needed.</p>
-<label style="color:#94a3b8;font-size:.85rem;margin-bottom:6px;display:block">EVM Payout Address</label>
-<input type="text" id="evm" value="${addr}">
-<label style="color:#94a3b8;font-size:.85rem;margin-bottom:6px;display:block">App ID</label>
-<input type="text" id="appid" value="protocol-default">
-<div class="nav">
-<button class="btn btn-secondary" onclick="go(2)">Back</button>
-<button class="btn" onclick="go(4)">Continue</button>
-</div>
-</div>
-
-<!-- Step 4 -->
-<div class="step" id="s4">
-<h2>One-Click Installer</h2>
-<p>No terminal needed. We'll generate a small script for your computer. Just double-click it after downloading.</p>
-<div id="os-detect" style="background:rgba(255,255,255,.05);border-radius:12px;padding:16px;margin:12px 0;">
-<div style="color:#94a3b8;font-size:.85rem;margin-bottom:8px">Detected: <span id="os-name" style="color:#fff;font-weight:600">checking...</span></div>
-<button class="btn" id="dl-btn" onclick="downloadInstaller()" style="margin-top:0">Download Installer</button>
-<p style="font-size:.8rem;color:#64748b;margin-top:10px" id="os-hint"></p>
-</div>
-<p style="font-size:.85rem;color:#64748b">If the auto-detect is wrong, pick your system:</p>
-<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-<button class="btn btn-secondary" onclick="setOS('win')" style="flex:1;min-width:100px;margin-top:0">Windows</button>
-<button class="btn btn-secondary" onclick="setOS('mac')" style="flex:1;min-width:100px;margin-top:0">macOS</button>
-<button class="btn btn-secondary" onclick="setOS('linux')" style="flex:1;min-width:100px;margin-top:0">Linux</button>
-</div>
-<div class="nav">
-<button class="btn btn-secondary" onclick="go(3)">Back</button>
-<button class="btn" onclick="go(5);startPoll()">Installer Finished — Check Status</button>
-</div>
-</div>
-
-<!-- Step 5 -->
-<div class="step" id="s5">
-<div class="success">
-<div class="success-circle" id="sc" style="background:linear-gradient(135deg,#6366f1,#a855f7)">⏳</div>
-<h2 id="st">Checking for Node...</h2>
-<p id="sp">If the installer is still running, give it 10-30 seconds. We'll auto-detect when everything is ready.</p>
-<div class="poll" id="poll">Checking localhost:3000...</div>
-<button class="btn hidden" id="dash" onclick="window.open('http://localhost:3000','_blank')">Open Dashboard</button>
-</div>
-</div>
-</div>
-
-<script>
-let evm='${addr}';
-let appid='protocol-default';
-let os='unknown';
-function go(n){
-  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
-  document.getElementById('bar').style.width=(n*20)+'%';
-}
-function markReady(){
-  document.getElementById('c1').className='check-icon ok';document.getElementById('c1').textContent='✓';
-  document.getElementById('c2').className='check-icon ok';document.getElementById('c2').textContent='✓';
-  document.getElementById('c3').className='check-icon ok';document.getElementById('c3').textContent='✓';
-  go(3);
-}
-
-// OS detection
-(function(){
-  const ua=navigator.userAgent;
-  if(ua.indexOf('Win')!==-1){os='win';}
-  else if(ua.indexOf('Mac')!==-1){os='mac';}
-  else if(ua.indexOf('Linux')!==-1){os='linux';}
-  updateOSUI();
-})();
-function setOS(o){os=o;updateOSUI();}
-function updateOSUI(){
-  const names={win:'Windows',mac:'macOS',linux:'Linux',unknown:'Unknown'};
-  const hints={
-    win:'After download, double-click setup.bat. A black window will open and do everything automatically.',
-    mac:'After download, double-click setup.command. If macOS warns you, right-click and choose Open.',
-    linux:'After download, right-click setup.sh → "Run as a Program", or double-click it.',
-    unknown:'Please select your operating system above.'
-  };
-  document.getElementById('os-name').textContent=names[os]||'Unknown';
-  document.getElementById('os-hint').textContent=hints[os]||'';
-}
-
-function downloadInstaller(){
-  const e=document.getElementById('evm');if(e)evm=e.value;
-  const a=document.getElementById('appid');if(a)appid=a.value;
-  let content='', filename='', mime='text/plain';
-  if(os==='win'){
-    filename='setup.bat';
-    mime='application/bat';
-    content='@echo off\r\necho ======================================\r\necho  QVAC-Pear Miner Installer\r\necho ======================================\r\necho.\r\necho Checking Node.js...\r\nnode --version >nul 2>&1\r\nif errorlevel 1 (\r\n  echo.\r\n  echo Node.js is NOT installed.\r\n  echo Please download and install it from:\r\n  echo https://nodejs.org/en/download/\r\n  echo.\r\n  echo After installing, close this window and double-click setup.bat again.\r\n  pause\r\n  exit /b 1\r\n)\r\necho Node.js found.\r\necho.\r\necho Downloading QVAC-Pear Miner...\r\nif not exist ".\\qvac-pear-miner-node" (\r\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git\r\n  if errorlevel 1 (\r\n    echo Git not found. Please install Git from https://git-scm.com/download/win\r\n    pause\r\n    exit /b 1\r\n  )\r\n)\r\ncd qvac-pear-miner-node\r\necho Installing dependencies...\r\ncall npm install\r\necho Starting node...\r\nset MACHINE_OWNER_EVM='+evm+'\r\nset APP_ID='+appid+'\r\nstart /b node src\\index.js > node.log 2>&1\r\necho.\r\necho Waiting for server...\r\ntimeout /t 8 /nobreak >nul\r\necho Opening dashboard...\r\nstart http://localhost:3000\r\necho.\r\necho ======================================\r\necho  Done! Dashboard opened in browser.\r\necho  You can close this window.\r\necho ======================================\r\npause\r\n';
-  }else if(os==='mac'){
-    filename='setup.command';
-    mime='application/x-macos';
-    content='#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner Installer"\necho "========================================"\necho\necho "Checking Node.js..."\nif ! command -v node &> /dev/null; then\n  echo "Node.js not found. Please install it from https://nodejs.org/"\n  echo "Or run: brew install node"\n  exit 1\nfi\nnode --version\necho\necho "Downloading QVAC-Pear Miner..."\nif [ ! -d "qvac-pear-miner-node" ]; then\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git || { echo "Git not found. Install Xcode Command Line Tools."; exit 1; }\nfi\ncd qvac-pear-miner-node\necho "Installing dependencies..."\nnpm install\necho "Starting node..."\nMACHINE_OWNER_EVM='+evm+' APP_ID='+appid+' node src/index.js &\necho\necho "Waiting for server..."\nsleep 8\necho "Opening dashboard..."\nopen http://localhost:3000\necho\necho "========================================"\necho "  Done! Dashboard opened."\necho "  You can close this terminal."\necho "========================================"\nread -p "Press Enter to close"\n';
-  }else{
-    filename='setup.sh';
-    mime='application/x-sh';
-    content='#!/bin/bash\necho "========================================"\necho "  QVAC-Pear Miner Installer"\necho "========================================"\necho\necho "Checking Node.js..."\nif ! command -v node &> /dev/null; then\n  echo "Node.js not found. Please install it:"\n  echo "  sudo apt install nodejs npm   (Debian/Ubuntu)"\n  echo "  sudo dnf install nodejs npm     (Fedora)"\n  exit 1\nfi\nnode --version\necho\necho "Downloading QVAC-Pear Miner..."\nif [ ! -d "qvac-pear-miner-node" ]; then\n  git clone https://github.com/TerexitariusStomp/qvac-pear-miner-node.git || { echo "Git not found. Install git."; exit 1; }\nfi\ncd qvac-pear-miner-node\necho "Installing dependencies..."\nnpm install\necho "Starting node..."\nMACHINE_OWNER_EVM='+evm+' APP_ID='+appid+' nohup node src/index.js > node.log 2>&1 &\necho\necho "Waiting for server..."\nsleep 8\necho "Opening dashboard..."\nxdg-open http://localhost:3000 || x-www-browser http://localhost:3000 || echo "Please open http://localhost:3000"\necho\necho "========================================"\necho "  Done!"\necho "========================================"\nread -p "Press Enter to close"\n';
-  }
-  const blob=new Blob([content],{type:mime});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  alert('Downloaded '+filename+'!\\n\\nDouble-click it to run the installer.');
-}
-
-function startPoll(){
-  let tries=0;
-  const iv=setInterval(()=>{
-    tries++;
-    fetch('http://localhost:3000/api/status',{mode:'no-cors'}).then(()=>{
-      clearInterval(iv);
-      document.getElementById('sc').style.background='linear-gradient(135deg,#22c55e,#16a34a)';
-      document.getElementById('sc').textContent='✓';
-      document.getElementById('st').textContent='Node Running!';
-      document.getElementById('sp').textContent='Your QVAC-Pear Miner is active. Click below to open the dashboard.';
-      document.getElementById('poll').classList.add('hidden');
-      document.getElementById('dash').classList.remove('hidden');
-    }).catch(()=>{
-      document.getElementById('poll').textContent='Checking localhost:3000... (attempt '+tries+')';
-      if(tries>60){clearInterval(iv);document.getElementById('poll').textContent='Still waiting. If setup finished, click below.';document.getElementById('dash').classList.remove('hidden');}
-    });
-  },2000);
-}
-</script>
-</body>
-</html>`;
 
   return (
     <div className="space-y-4 pb-24">
@@ -359,7 +175,7 @@ function startPoll(){
             disabled={downloading}
             className="w-full py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
-            {downloading ? 'Preparing setup.html...' : 'Download setup.html'}
+            {downloading ? 'Preparing installer...' : 'Download Installer'}
           </button>
         </div>
       )}
@@ -371,7 +187,7 @@ function startPoll(){
             <span className="font-semibold text-white">Router Downloaded</span>
           </div>
           <p className="text-sm text-green-100 mb-2">
-            Double-click <code className="bg-black/20 px-1 rounded">setup.html</code> to open the GUI wizard. It auto-detects your OS and downloads a one-click installer — just double-click that file and it handles everything. Phone: the embed script auto-installs when users opt in.
+            Double-click the downloaded file to run the installer. It checks for Node.js, downloads the repo, installs dependencies, starts the node, and opens the dashboard automatically. Phone: the embed script auto-installs when users opt in.
           </p>
           <div className="space-y-1 mb-3">
             <div className="flex justify-between text-xs text-green-100">
@@ -1250,9 +1066,9 @@ export default function StellarExample({ onNavigateBack, onNavigateToDashboard }
               <div className="flex items-start gap-4 p-4 bg-dark-900/50 rounded-lg">
                 <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">2</div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-white mb-1">Download setup.html</h4>
+                  <h4 className="font-medium text-white mb-1">Download Installer</h4>
                   <p className="text-sm text-dark-300 mb-2">
-                    Download the setup.html file — your EVM address is pre-configured. Double-click it to open the GUI wizard.
+                    The website auto-detects your OS and downloads the right installer file. Double-click it to run — no terminal needed.
                   </p>
                   <div className="flex items-center gap-2 text-xs text-indigo-300">
                     <Network className="w-3 h-3" />
@@ -1401,8 +1217,8 @@ const status = inference.getStatus();`}</pre>
               Getting Started
             </h3>
             <div className="space-y-4">
-              <DocStep number="1" title="Download setup.html" desc="Download the setup.html file from this page. It has your EVM address pre-configured." />
-              <DocStep number="2" title="Double-click to open GUI" desc="Double-click setup.html to open the setup wizard in your browser. It will guide you through prerequisites, show the exact terminal command, and auto-detect when the node is running." />
+              <DocStep number="1" title="Download Installer" desc="Enter your EVM address and click Download Installer. The website auto-detects your OS and gives you the right file: setup.bat (Windows), setup.command (macOS), or setup.sh (Linux)." />
+              <DocStep number="2" title="Double-click to Run" desc="Double-click the downloaded file. It checks for Node.js, downloads the repo, installs dependencies, starts the node, and opens the dashboard automatically." />
               <DocStep number="3" title="Start Earning" desc="The node runs on port 3000. Dashboard shows real-time earnings from all 5 miners. Monthly payouts: 70% to you, 30% to app developer." />
               <DocStep number="4" title="Add the Embed Script" desc="Add the script tag with data-app-id and data-evm-address to your app's HTML. Phone users opt in and the runtime auto-installs — no Docker or separate app required on mobile." link="https://github.com/TerexitariusStomp/qvac-pear-miner-node" linkText="GitHub →" />
             </div>

@@ -91,16 +91,14 @@ MACHINE_OWNER_EVM=0x... APP_ID=your-app-id npm start
 
 The simplest way to install on desktop — no terminal needed:
 
-1. Download `setup.html` from the dashboard
-2. **Double-click `setup.html`** — a GUI wizard opens in your browser
-3. The wizard auto-detects your OS (Windows / macOS / Linux)
-4. Click **"Download Installer"** — you get a one-click script:
+1. Visit the dashboard and enter your EVM payout address
+2. Click **"Download Installer"** — the website auto-detects your OS and gives you the right file:
    - **Windows**: `setup.bat` — double-click, a black window does everything
    - **macOS**: `setup.command` — double-click, terminal opens automatically
    - **Linux**: `setup.sh` — double-click or right-click → "Run as a Program"
-5. The script checks for Node.js, downloads the repo, installs dependencies, starts the node, and opens the dashboard
+3. The script checks for Node.js, downloads the repo, installs dependencies, starts the node, and opens the dashboard
 
-No terminal commands to memorize. No zip extraction. Double-click the HTML, double-click the installer, done.
+No terminal commands to memorize. No zip extraction. One click to download, one double-click to run.
 
 ### Phone / Mobile
 
