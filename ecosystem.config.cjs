@@ -22,6 +22,22 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
       merge_logs: true,
       time: true
+    },
+    {
+      name: 'joplin-wiki',
+      script: '/home/user/otterwiki-repo/joplin_wiki_server_v2.py',
+      cwd: '/home/user/otterwiki-repo',
+      interpreter: '/usr/bin/python3',
+      watch: false,
+      autorestart: true,
+      max_restarts: 10,
+      restart_delay: 3000,
+      env: { PYTHONUNBUFFERED: '1' },
+      error_file: '/home/user/otterwiki-repo/logs/wiki-error.log',
+      out_file: '/home/user/otterwiki-repo/logs/wiki-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+      merge_logs: true,
+      time: true
     }
   ]
 };

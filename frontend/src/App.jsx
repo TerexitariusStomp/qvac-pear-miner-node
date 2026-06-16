@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Activity, Cpu, Network, Clock, Zap, Moon, Sun, Server, Database, Home, BarChart3 } from 'lucide-react'
+import { Activity, Cpu, Network, Clock, Zap, Moon, Sun, Server, Database, Home, BarChart3, BookOpen, Users } from 'lucide-react'
 import NodeStatus from './components/NodeStatus'
 import MinerGrid from './components/MinerGrid'
 import TaskMonitor from './components/TaskMonitor'
@@ -9,6 +9,8 @@ import P2PNetwork from './components/P2PNetwork'
 import StellarIntegration from './components/StellarIntegration'
 import Landing from './pages/Landing'
 import StellarExample from './pages/StellarExample'
+import LLMWiki from './pages/LLMWiki'
+import Orchestrator from './pages/Orchestrator'
 import MobileMinerConsole from './components/MobileMinerConsole'
 
 // Simple error boundary
@@ -100,6 +102,28 @@ function App() {
     )
   }
 
+  // Show LLM Wiki page
+  if (currentView === 'llmwiki') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
+          <LLMWiki onBack={() => setCurrentView('dashboard')} />
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
+  // Show Fleet Orchestrator page
+  if (currentView === 'orchestrator') {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
+          <Orchestrator onBack={() => setCurrentView('dashboard')} />
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -134,6 +158,20 @@ function App() {
                 >
                   <Home className="w-4 h-4" />
                   <span className="hidden sm:inline">Home</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView('llmwiki')}
+                  className="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-sm transition-colors"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">LLM Wiki</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView('orchestrator')}
+                  className="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-sm transition-colors"
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">Fleet</span>
                 </button>
                 <div className="flex items-center gap-2 text-sm">
                   <Server className="w-4 h-4 text-primary-400" />

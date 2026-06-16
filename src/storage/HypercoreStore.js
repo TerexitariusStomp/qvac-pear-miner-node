@@ -102,7 +102,8 @@ export class HypercoreStore {
       throw new Error('Data store not running');
     }
     const entry = { type: 'ai-doc', ...doc };
-    const seq = await this.core.append(JSON.stringify(entry));
+    const result = await this.core.append(JSON.stringify(entry));
+    const seq = typeof result === 'object' ? (result.length ?? result.seq ?? JSON.stringify(result)) : result;
     this.logger.info(`Appended AI doc "${doc.title}" at sequence ${seq}`);
     return seq;
   }
